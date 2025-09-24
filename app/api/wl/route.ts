@@ -1,0 +1,133 @@
+// app/api/wl/route.ts
+import { NextResponse } from "next/server";
+
+type Chain = "ETH" | "SOL" | "BTC" | "APE" | "BASE" | "ABS" | "Monad" | "HYPER";
+type WLType = "GTD" | "FCFS" | "OG" | "WL";
+type Priority = "High" | "Potential" | "Early";
+type WL = {
+  id: number;
+  project: string;
+  x?: string;
+  chain: Chain;
+  type: WLType;
+  wallets?: string;
+  mintDate?: string;
+  price?: number;
+  priority?: Priority;
+  status?: "Not Minted" | "Minted";
+};
+
+const normalizeKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+const idxMap = (headers: string[]) =>
+  headers.reduce<Record<string, number>>((m, h, i) => { m[normalizeKey(h)] = i; return m; }, {});
+const getCell = (row: string[], map: Record<string, number>, key: string) => row[map[key] ?? -1] ?? "";
+const pick = (row: string[], map: Record<string, number>, keys: string[]) => {
+  for (const k of keys) {
+    const v = getCell(row, map, normalizeKey(k));
+    if (v != null && String(v).trim() !== "") return v;
+  }
+  return "";
+};
+
+const normalizeChain = (s = ""): Chain => {
+  const t = s.trim().toUpperCase();
+  const m: Record<string, Chain> = {
+    ETH: "ETH", ETHEREUM: "ETH",
+    SOL: "SOL", SOLANA: "SOL",
+    BTC: "BTC", BITCOIN: "BTC",
+    APE: "APE", BASE: "BASE",
+    ABSTRACT: "ABS", ABS: "ABS",
+    MONAD: "Monad", MON: "Monad",
+    HYPER: "HYPER", HYPERLIQUID: "HYPER",
+  };
+  return m[t] ?? "ETH";
+};
+const normalizeType = (s = ""): WLType => {
+  const t = s.trim().toUpperCase();
+  return (["GTD","FCFS","OG","WL"].includes(t) ? (t as WLType) : "WL");
+};
+const toISO = (v: string): string | undefined => {
+  if (!v) return;
+  const num = Number(v);
+  if (!Number.isNaN(num) && v.trim() !== "") {
+    const base = new Date(Date.UTC(1899, 11, 30));
+    return new Date(base.getTime() + num * 86400000).toISOString().slice(0,10);
+  }
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? undefined : new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+};
+const toNum = (v: string) => {
+  const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
+  return Number.isFinite(n) ? n : undefined;
+};
+
+// tiny CSV parser
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [], cell = "", inQ = false;
+  for (let i=0;i<text.length;i++) {
+    const c = text[i], n = text[i+1];
+    if (inQ) {
+      if (c === '"' && n === '"') { cell += '"'; i++; }
+      else if (c === '"') { inQ = false; }
+      else { cell += c; }
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ",") { row.push(cell); cell = ""; }
+      else if (c === "\n") { row.push(cell); rows.push(row); row=[]; cell=""; }
+      else if (c === "\r") { /* ignore */ }
+      else { cell += c; }
+    }
+  }
+  row.push(cell); rows.push(row);
+  return rows.filter(r => r.length && r.some(x => x !== ""));
+}
+
+function mapRows(values: string[][]): WL[] {
+  if (values.length < 2) return [];
+  const headerRow = values[0];
+  const map = idxMap(headerRow);
+
+  return values.slice(1).map((row, i) => {
+    const project = pick(row, map, ["Project Name","ProjectName","Project"]).trim();
+    if (!project) return undefined as any;
+
+    const x = pick(row, map, ["X"]).trim() || undefined;
+    const type = normalizeType(pick(row, map, ["Type","Phase"]));
+    const chain = normalizeChain(pick(row, map, ["Chain"]));
+    const wallets = pick(row, map, ["Wallet","Wallets"]).trim() || undefined;
+    const mintDate = toISO(pick(row, map, ["Mint Date","MintDate"]));
+    const price = toNum(pick(row, map, ["Mint Price","Price","MintPrice"]));
+
+    return {
+      id: i + 1,
+      project,
+      x,
+      chain,
+      type,
+      wallets,
+      mintDate,
+      price,
+      priority: "Potential",
+      status: "Not Minted",
+    };
+  }).filter(Boolean);
+}
+
+export const runtime = "nodejs";
+
+export async function GET() {
+  try {
+  
+    // Public CSV fallback (no billing / no auth)
+    const csvUrl = process.env.SHEET_CSV_URL;
+    if (!csvUrl) return NextResponse.json({ wls: [] }, { headers: { "Cache-Control": "s-maxage=30" } });
+
+    const res = await fetch(csvUrl, { next: { revalidate: 60 } });
+    const text = await res.text();
+    return NextResponse.json({ wls: mapRows(parseCSV(text)) }, { headers: { "Cache-Control": "s-maxage=60" } });
+  } catch (e: any) {
+    console.error("WL API error:", e?.message || e);
+    return NextResponse.json({ error: "Failed to load whitelists" }, { status: 500 });
+  }
+}
