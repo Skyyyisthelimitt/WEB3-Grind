@@ -1,0 +1,33 @@
+
+[
+  {
+    "id": "1",
+    "project": "Melio",
+    "twitter": "https://x.com/example",
+    "community": "https://discord.gg/example",
+    "spots": 50,
+    "teamSpots": 2,
+    "giveawayLink": "",
+    "giveawayWinners": [],
+    "status": "Not Posted",
+    "notes": "Need post image",
+    "priority": 2,
+    "dueAt": "2025-08-28",
+    "createdAt": "2025-07-10T00:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "project": "Mempoolio",
+    "twitter": "https://x.com/example2",
+    "community": "",
+    "spots": 20,
+    "teamSpots": 1,
+    "giveawayLink": "https://example.com/giveaway",
+    "giveawayWinners": [],
+    "status": "Posted",
+    "notes": "",
+    "priority": 1,
+    "dueAt": "2025-08-30",
+    "createdAt": "2025-07-12T00:00:00.000Z"
+  }
+]

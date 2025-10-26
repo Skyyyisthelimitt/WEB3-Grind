@@ -234,7 +234,26 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const collabs = seedCollabs;
+// at top of DashboardPage (client component)
+const [collabs, setCollabs] = useState<Collab[]>([]);
+
+useEffect(() => {
+  let alive = true;
+  (async () => {
+    try {
+      const res = await fetch("/api/collabs", { cache: "no-store" });
+      const json = await res.json();
+      if (!alive) return;
+      setCollabs(json.collabs ?? []);
+    } catch (e) {
+      console.error(e);
+      if (!alive) return;
+      setCollabs([]);
+    }
+  })();
+  return () => { alive = false; };
+}, []);
+
 
   const totals = useMemo(
     () => ({ totalWL: wls.length, totalCollabs: collabs.length }),

@@ -1,58 +1,74 @@
-'use client';
-
+"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  Users,
+  ClipboardList,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-function NavLink({
-  href,
-  icon,
-  children,
-}: {
-  href: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
+const SideNav = () => {
   const pathname = usePathname();
-  const active = pathname === href;
+  const [collapsed, setCollapsed] = useState(false);
+
+  const links = [
+    { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/whitelists", label: "Whitelists", icon: ClipboardList },
+    { href: "/collabs", label: "Collabs", icon: Users },
+  ];
 
   return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={`group flex items-center gap-2 px-3 py-2 rounded-xl border transition-all
-        ${active
-          ? "bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 text-white border-violet-700/40 shadow-[0_8px_24px_-12px_rgba(168,85,247,.45)]"
-          : "bg-zinc-900/60 text-zinc-300 border-zinc-800 hover:bg-zinc-900 hover:translate-x-[1px]"}
-      `}
+    <aside
+      className={`h-screen bg-gray-900 text-gray-100 flex flex-col transition-all duration-300 border-r border-gray-800
+        ${collapsed ? "w-20" : "w-60"}`}
     >
-      <span className="shrink-0">{icon}</span>
-      <span className="truncate">{children}</span>
-      <span
-        className={`ml-auto h-1.5 w-1.5 rounded-full transition-transform
-          ${active ? "bg-violet-400 scale-100" : "bg-zinc-700 scale-0 group-hover:scale-75"}
-        `}
-      />
-    </Link>
-  );
-}
-
-export default function Sidebar() {
-  return (
-    <aside className="hidden lg:flex w-60 shrink-0 flex-col bg-black/50 border-r border-zinc-900 min-h-screen p-4">
-      <div className="flex items-center gap-2 px-1">
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-white-500 to-gray-500 grid place-items-center text-white font-semibold">
-          ☁️
-        </div>
-        <span className="font-semibold tracking-wide">WEB3 Manager</span>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-800">
+        {!collapsed && <h1 className="text-xl font-bold">WL Tracker</h1>}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1.5 rounded hover:bg-gray-800 transition"
+          aria-label="Toggle Sidebar"
+        >
+          {collapsed ? (
+            <ChevronRight size={20} />
+          ) : (
+            <ChevronLeft size={20} />
+          )}
+        </button>
       </div>
 
-      <hr className="border-zinc-900 my-4" />
-
-      <nav className="space-y-1">
-        <NavLink href="/" icon="🏠">Dashboard</NavLink>
-        <NavLink href="/whitelists" icon="📋">Whitelists</NavLink>
-        <NavLink href="/collabs" icon="🤝">Collabs</NavLink>
+      {/* Navigation */}
+      <nav className="flex-1 px-2 py-4 space-y-1">
+        {links.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-200 
+                ${
+                  active
+                    ? "bg-blue-600 text-white"
+                    : "hover:bg-gray-800 text-gray-300 hover:text-white"
+                }`}
+            >
+              <Icon size={20} />
+              {!collapsed && <span className="text-sm">{label}</span>}
+            </Link>
+          );
+        })}
       </nav>
+
+      {/* Footer */}
+      <div className="border-t border-gray-800 px-4 py-3 text-xs text-gray-400">
+        {!collapsed && <p>v1.0.0</p>}
+      </div>
     </aside>
   );
-}
+};
+
+export default SideNav;
