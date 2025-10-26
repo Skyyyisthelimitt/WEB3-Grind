@@ -15,7 +15,7 @@ import {
 } from "recharts";
 
 // Local images (PNGs)
-import pfp from "./images/pfp.png";
+import pfp from "./images/khun.jpg";
 import btcIcon from "./images/btc.png";
 import ethIcon from "./images/eth.png";
 import solIcon from "./images/sol.png";
@@ -315,7 +315,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">
-            NFT Manager{" "}
+            WEB3 Manager{" "}
             <span className="text-zinc-500 text-sm">@0xSkyisthelimit</span>
           </h1>
         </div>
@@ -328,7 +328,7 @@ export default function DashboardPage() {
               className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60">
-              🔎
+              
             </span>
           </div>
           <Link

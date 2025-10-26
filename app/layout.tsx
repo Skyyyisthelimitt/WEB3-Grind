@@ -2,7 +2,7 @@ import "./globals.css";
 import Sidebar from "./components/SideNav";
 
 export const metadata = {
-  title: "NFT Manager",
+  title: "WEB3 Manager",
   description: "Personal NFT WL & Collab manager",
 };
 

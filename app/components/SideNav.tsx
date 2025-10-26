@@ -40,10 +40,10 @@ export default function Sidebar() {
   return (
     <aside className="hidden lg:flex w-60 shrink-0 flex-col bg-black/50 border-r border-zinc-900 min-h-screen p-4">
       <div className="flex items-center gap-2 px-1">
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center text-white font-semibold">
-          ◇
+        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-white-500 to-gray-500 grid place-items-center text-white font-semibold">
+          ☁️
         </div>
-        <span className="font-semibold tracking-wide">NFT Manager</span>
+        <span className="font-semibold tracking-wide">WEB3 Manager</span>
       </div>
 
       <hr className="border-zinc-900 my-4" />
