@@ -2,12 +2,14 @@
   "name": "nft-wl-tracker",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "NODE_OPTIONS=--openssl-legacy-provider next dev",
-    "build": "NODE_OPTIONS=--openssl-legacy-provider next build",
-    "start": "NODE_OPTIONS=--openssl-legacy-provider next start",
-    "lint": "next lint"
-  },
+  
+ "scripts": {
+  "dev": "next dev",
+  "start": "next start",
+  "build": "next build",
+  "lint": "next lint"
+},
+
   "dependencies": {
     "googleapis": "^159.0.0",
     "lucide-react": "^0.548.0",
