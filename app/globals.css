@@ -3,3 +3,29 @@
 .navlink{
   @apply px-3 py-2 rounded-2xl text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 border border-transparent hover:border-zinc-700;
 }
+
+/* subtle submenu divider and spacing */
+aside nav .submenu-sep { height: 1px; background: rgba(148,163,184,0.06); margin: 6px 0; }
+
+/* when collapsed, center icons vertically and keep compact look */
+aside.w-20 { /* handled by Tailwind classes; keep for reference */ }
+
+@layer utilities {
+  /* Custom scrollbar styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(39 39 42 / 0.6);
+    border-radius: 3px;
+  }
+}
