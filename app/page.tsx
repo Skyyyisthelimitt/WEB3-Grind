@@ -344,7 +344,7 @@ useEffect(() => {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search whitelists…"
-              className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+              className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60">
               
@@ -352,7 +352,7 @@ useEffect(() => {
           </div>
           <Link
             href="/whitelists"
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white hover:from-violet-400 hover:to-fuchsia-400"
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-gradient-to-br from-sky-500 to-cyan-400 text-white hover:from-sky-400 hover:to-cyan-300 shadow-lg ring-1 ring-white/6 transition-transform active:scale-95"
           >
             + Add Whitelist
           </Link>
