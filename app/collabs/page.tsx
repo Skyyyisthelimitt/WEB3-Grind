@@ -1,35 +1,41 @@
 "use client";
 import { useEffect, useState } from "react";
-
-const extractSheetId = (url: string) => {
-  const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-  return match ? match[1] : null;
-};
-
-const getSheetUrl = (winners: string) => {
-  // Check if it's already a URL
-  if (winners.startsWith('https://docs.google.com')) {
-    return winners;
-  }
-  // If it's just a title/name, construct URL using the master spreadsheet
-  return `https://docs.google.com/spreadsheets/d/${process.env.NEXT_PUBLIC_MASTER_SHEET_ID}/edit#gid=0`;
-};
+import { useSearchParams } from "next/navigation";
 
 export default function CollabsPage() {
   const [collabs, setCollabs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const tab = searchParams?.get("tab") || "ongoing";
 
   useEffect(() => {
-    fetch("/api/collabs")
+    setLoading(true);
+    fetch(`/api/collabs?tab=${tab}`)
       .then((res) => res.json())
-      .then((data) => setCollabs(data.collabs || []))
-      .catch((err) => console.error(err));
-  }, []);
+      .then((data) => {
+        // Filter out rows where all main fields are empty
+        const filteredCollabs = (data.collabs || []).filter((collab: any) => 
+          collab.project || 
+          collab.twitter || 
+          collab.community || 
+          collab.spots
+        );
+        setCollabs(filteredCollabs);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [tab]);
 
   return (
-    <div className="p-6 text-gray-100 h-screen">
-      <h1 className="text-2xl font-semibold mb-4">Collab Management</h1>
-      <div className="border border-gray-800 rounded-lg max-h-[calc(100vh-8rem)] overflow-hidden">
-        <div className="overflow-y-auto">
+    <div className="p-6 text-gray-100">
+      <h1 className="text-2xl font-semibold mb-4">
+        Collab Management - {tab === "done" ? "Done" : "Ongoing"}
+      </h1>
+      <div className="border border-gray-800 rounded-lg">
+        <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-gray-300">
             <thead className="bg-gray-800 text-gray-400 uppercase sticky top-0">
               <tr>
@@ -44,10 +50,16 @@ export default function CollabsPage() {
                 <th className="px-4 py-2 text-left">Winners</th>
               </tr>
             </thead>
-            <tbody>
-              {collabs.length > 0 ? (
+            <tbody className="divide-y divide-gray-800">
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-2 text-center">
+                    Loading...
+                  </td>
+                </tr>
+              ) : collabs.length > 0 ? (
                 collabs.map((c: any) => (
-                  <tr key={c.id} className="border-t border-gray-800 hover:bg-gray-800/40">
+                  <tr key={c.id} className="hover:bg-gray-800/40">
                     <td className="px-4 py-2">{c.project}</td>
                     <td className="px-4 py-2">
                       <a href={c.twitter} className="text-blue-400 hover:underline" target="_blank">
@@ -82,12 +94,12 @@ export default function CollabsPage() {
                     <td className="px-4 py-2">
                       {c.winners ? (
                         <a 
-                          href={getSheetUrl(c.winners)}
+                          href={c.winners}  // Use the direct URL instead of getSheetUrl
                           className="text-blue-400 hover:underline" 
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          {c.winners.includes('https://') ? 'Winners Sheet' : c.winners}
+                          Winners Sheet
                         </a>
                       ) : "-"}
                     </td>
@@ -95,8 +107,8 @@ export default function CollabsPage() {
                 ))
               ) : (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-500" colSpan={9}>
-                    No collabs found
+                  <td colSpan={9} className="px-4 py-2 text-center text-gray-500">
+                    No {tab} collabs found
                   </td>
                 </tr>
               )}

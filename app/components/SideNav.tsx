@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard,
@@ -12,11 +12,17 @@ import {
 
 const SideNav = () => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get("tab") || "ongoing";
   const [collapsed, setCollapsed] = useState(false);
+
+  // submenu state for Collabs
+  const [collabsOpen, setCollabsOpen] = useState(pathname?.startsWith("/collabs") ?? false);
 
   const links = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/whitelists", label: "Whitelists", icon: ClipboardList },
+    // keep a placeholder entry for Collabs, submenu will be rendered below
     { href: "/collabs", label: "Collabs", icon: Users },
   ];
 
@@ -44,6 +50,49 @@ const SideNav = () => {
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-1">
         {links.map(({ href, label, icon: Icon }) => {
+          // Render Collabs as a submenu
+          if (label === "Collabs") {
+            const activeRoot = pathname?.startsWith("/collabs");
+            return (
+              <div key="collabs">
+                <button
+                  onClick={() => setCollabsOpen((s) => !s)}
+                  className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-200 
+                    ${activeRoot ? "bg-blue-600 text-white" : "hover:bg-gray-800 text-gray-300 hover:text-white"}`}
+                >
+                  <Icon size={20} />
+                  {!collapsed && <span className="text-sm">Collabs</span>}
+                </button>
+
+                {/* submenu (hidden when collapsed) */}
+                {!collapsed && collabsOpen && (
+                  <div className="mt-1 ml-8 flex flex-col gap-1">
+                    <Link
+                      href="/collabs?tab=ongoing"
+                      className={`rounded px-2 py-1 text-sm transition ${
+                        activeRoot && tabParam === "ongoing"
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-300 hover:bg-gray-800"
+                      }`}
+                    >
+                      Ongoing
+                    </Link>
+                    <Link
+                      href="/collabs?tab=done"
+                      className={`rounded px-2 py-1 text-sm transition ${
+                        activeRoot && tabParam === "done"
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-300 hover:bg-gray-800"
+                      }`}
+                    >
+                      Done
+                    </Link>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           const active = pathname === href;
           return (
             <Link
