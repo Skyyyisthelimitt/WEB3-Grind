@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import Image from "next/image";
+import khun from "../images/khun.jpg"; // Import the khun image
 
 export default function SideNav() {
   const pathname = usePathname();
@@ -32,9 +34,15 @@ export default function SideNav() {
       {/* Logo section */}
       <div className="flex items-center justify-between px-3 py-4 border-b border-zinc-900/60">
         <div className="flex items-center gap-3">
-          <div className={`flex items-center justify-center rounded-md bg-gradient-to-br from-blue-600/80 to-blue-800/80 text-white
-              ${collapsed ? "w-8 h-8 text-sm" : "w-10 h-10 text-lg"}`}>
-            W
+          <div className={`relative flex items-center justify-center rounded-md overflow-hidden
+              ${collapsed ? "w-8 h-8" : "w-10 h-10"}`}>
+            <Image 
+              src={khun}
+              alt="Logo"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
           {!collapsed && <div className="font-semibold text-zinc-200">WL Tracker</div>}
         </div>
