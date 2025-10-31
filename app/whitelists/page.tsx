@@ -51,14 +51,22 @@ export default function WhitelistsPage() {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Whitelists <span className="text-sm text-zinc-500">({filtered.length})</span></h1>
-        <div className="relative w-80">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by project, chain, type, wallet…"
-            className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-3 py-2 pr-9 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60">🔎</span>
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          <div className="relative flex-1 max-w-[640px]">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search whitelists or collabs…"
+              className="w-full rounded-xl bg-zinc-900/70 border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"></span>
+          </div>
+          <Link
+            href="/whitelists"
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
+          >
+            + Add Whitelist
+          </Link>
         </div>
       </div>
 
