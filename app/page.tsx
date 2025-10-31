@@ -378,7 +378,7 @@ useEffect(() => {
             className="h-28"
           />
 
-          <Card title="Summary WL" className="h-[420px]">
+          <Card title="WL Summary" className="h-[420px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={pie} dataKey="value" nameKey="name" outerRadius={116}>
