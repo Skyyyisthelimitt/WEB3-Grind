@@ -318,29 +318,35 @@ useEffect(() => {
     <div className="max-w-[1500px] mx-auto px-4 space-y-5 pb-10">
       {/* top bar */}
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        {/* Left: Title */}
         <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">
             WEB3 Manager{" "}
             <span className="text-zinc-500 text-sm">@0xSkyisthelimit</span>
           </h1>
         </div>
-        <div className="flex items-center gap-2 w-full xl:w-auto">
-          <div className="relative flex-1 xl:w-[420px]">
+        {/* Right: Search + Actions */}
+        <div className="flex items-center gap-2 w-full xl:flex-1 justify-end">
+          <div className="relative flex-1">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search whitelists…"
-              className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              placeholder="Search whitelists or collabs…"
+              className="w-full rounded-xl bg-zinc-900/70 border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60">
-              
-            </span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"></span>
           </div>
           <Link
             href="/whitelists"
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95"
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
           >
             + Add Whitelist
+          </Link>
+          <Link
+            href="/collabs"
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
+          >
+            + Add Collab
           </Link>
         </div>
       </div>
