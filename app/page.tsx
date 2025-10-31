@@ -157,78 +157,45 @@ export default function DashboardPage() {
 
   /* ------------------ coin fetching (CoinGecko) ------------------ */
   useEffect(() => {
-    // map our symbols to Coingecko ids
-    const idMap: Record<Coin["symbol"], string> = {
-      BTC: "bitcoin",
-      ETH: "ethereum",
-      SOL: "solana",
-    };
-
     let alive = true;
     let retryCount = 0;
     const maxRetries = 3;
     const retryDelay = 10_000; // 10 seconds
     async function fetchCoinsWithRetry() {
       try {
-        // current prices + 24h change
-        const priceUrl =
-          "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true";
-        const priceRes = await fetch(priceUrl);
+        const priceRes = await fetch('/api/crypto-prices');
         if (!priceRes.ok) throw new Error(`Price fetch failed: ${priceRes.status}`);
-        const priceData = await priceRes.json();
-
-        // historical for charts (1 day, hourly to keep points manageable)
-        const histPromises = (["bitcoin", "ethereum", "solana"]).map((id) =>
-          fetch(
-            `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=1&interval=hourly`
-          )
-        );
-        const histRes = await Promise.all(histPromises);
-        const histJson = await Promise.all(histRes.map(async (r, idx) => {
-          if (!r.ok) {
-            const text = await r.text();
-            console.error(`Historical price fetch failed for ${["bitcoin","ethereum","solana"][idx]}: ${r.status} - ${text}`);
-            return null;
-          }
-          return r.json();
-        }));
-
-        if (!alive) return;
+        const priceObj = await priceRes.json();
+        const data = priceObj.data || {};
+        // Map: { BTC: { quote: { USD: { price, percent_change_24h } } }, ... }
+        const nowPrice = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.price ?? initialCoins.find(c => c.symbol === symbol)?.price);
+        const change24h = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.percent_change_24h ?? initialCoins.find(c => c.symbol === symbol)?.changePct);
         const updated: Coin[] = [
           {
             symbol: "BTC" as const,
             name: "Bitcoin",
-            price: Number(priceData.bitcoin?.usd ?? initialCoins[0].price),
-            changePct: Number(priceData.bitcoin?.usd_24h_change ?? initialCoins[0].changePct),
-            series:
-              Array.isArray(histJson[0]?.prices) && histJson[0].prices.length
-                ? histJson[0].prices.map((p: [number, number]) => Number(p[1]))
-                : initialCoins[0].series,
+            price: nowPrice('BTC'),
+            changePct: change24h('BTC'),
+            series: initialCoins[0].series,
           },
           {
             symbol: "ETH" as const,
             name: "Ethereum",
-            price: Number(priceData.ethereum?.usd ?? initialCoins[1].price),
-            changePct: Number(priceData.ethereum?.usd_24h_change ?? initialCoins[1].changePct),
-            series:
-              Array.isArray(histJson[1]?.prices) && histJson[1].prices.length
-                ? histJson[1].prices.map((p: [number, number]) => Number(p[1]))
-                : initialCoins[1].series,
+            price: nowPrice('ETH'),
+            changePct: change24h('ETH'),
+            series: initialCoins[1].series,
           },
           {
             symbol: "SOL" as const,
             name: "Solana",
-            price: Number(priceData.solana?.usd ?? initialCoins[2].price),
-            changePct: Number(priceData.solana?.usd_24h_change ?? initialCoins[2].changePct),
-            series:
-              Array.isArray(histJson[2]?.prices) && histJson[2].prices.length
-                ? histJson[2].prices.map((p: [number, number]) => Number(p[1]))
-                : initialCoins[2].series,
+            price: nowPrice('SOL'),
+            changePct: change24h('SOL'),
+            series: initialCoins[2].series,
           },
         ];
         setCoins(updated);
         setLoadingCoins(false);
-        retryCount = 0; // reset retries on success
+        retryCount = 0;
       } catch (e) {
         console.error("Failed to fetch coin data", e);
         setLoadingCoins(false);
@@ -236,7 +203,6 @@ export default function DashboardPage() {
           retryCount++;
           setTimeout(fetchCoinsWithRetry, retryDelay);
         } else if (!alive) {
-          // user navigated away
           return;
         }
       }
