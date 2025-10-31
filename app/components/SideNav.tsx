@@ -74,7 +74,7 @@ export default function SideNav() {
                   title="Collabs"
                   className={`w-full flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors text-base
                     ${activeRoot 
-                      ? "bg-blue-600/10 text-blue-500" 
+                      ? "bg-blue-600/10 text-white" 
                       : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                 >
                   <Icon size={20} />
@@ -90,7 +90,7 @@ export default function SideNav() {
                         href="/collabs?tab=ongoing"
                         className={`block rounded-md px-4 py-2.5 text-[15px] transition-colors
                           ${activeRoot && tabParam === "ongoing"
-                            ? "border-l-2 border-blue-500 bg-blue-500/10 text-blue-400 pl-[14px]"
+                            ? "border-l-2 border-blue-500 bg-blue-500/10 text-white pl-[14px]"
                             : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                       >
                         Ongoing
@@ -99,7 +99,7 @@ export default function SideNav() {
                         href="/collabs?tab=done"
                         className={`block rounded-md px-4 py-2.5 text-[15px] transition-colors
                           ${activeRoot && tabParam === "done"
-                            ? "border-l-2 border-blue-500 bg-blue-500/10 text-blue-400 pl-[14px]"
+                            ? "border-l-2 border-blue-500 bg-blue-500/10 text-white pl-[14px]"
                             : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                       >
                         Done
@@ -119,7 +119,7 @@ export default function SideNav() {
               title={label}
               className={`flex items-center gap-4 rounded-md px-4 py-3 transition-colors text-base
                 ${active 
-                  ? "bg-blue-600/10 text-blue-500" 
+                  ? "bg-blue-600/10 text-white" 
                   : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
             >
               <Icon size={20} />

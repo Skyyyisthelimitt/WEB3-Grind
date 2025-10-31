@@ -276,8 +276,24 @@ useEffect(() => {
   );
 
   const needsAction = useMemo(() => {
-    return collabs.filter((c) => c.status === "Not Posted");
+    const normalize = (s: string = "") => s.toLowerCase().replace(/\s+/g, "").trim();
+    return collabs.filter((c) => normalize(c.status as any) === "notposted");
   }, [collabs]);
+
+  // pagination for Collabs — Action Required
+  const [collabPage, setCollabPage] = useState(0);
+  const collabPageSize = 6;
+  const showCollabPagination = needsAction.length > 7;
+  const collabTotalPages = useMemo(() => showCollabPagination ? Math.max(1, Math.ceil(needsAction.length / collabPageSize)) : 1, [needsAction.length, showCollabPagination]);
+  useEffect(() => {
+    // clamp current page if data size changes
+    if (collabPage > collabTotalPages - 1) setCollabPage(collabTotalPages - 1);
+  }, [collabPage, collabTotalPages]);
+  const collabPageItems = useMemo(() => {
+    if (!showCollabPagination) return needsAction; // show all when <= 8
+    const start = collabPage * collabPageSize;
+    return needsAction.slice(start, start + collabPageSize);
+  }, [needsAction, collabPage, showCollabPagination]);
 
   const filteredWL = useMemo(() => {
     if (!q.trim()) return wls;
@@ -325,7 +341,7 @@ useEffect(() => {
           </div>
           <Link
             href="/whitelists"
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-blue-500 hover:bg-blue-600/20 hover:text-blue-400 shadow-lg ring-1 ring-white/6 transition-transform active:scale-95"
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95"
           >
             + Add Whitelist
           </Link>
@@ -392,18 +408,45 @@ useEffect(() => {
           </Card>
 
           <Card title="Collabs — Action Required" className="h-[420px]" badgeCount={needsAction.length}>
-            <ul className="space-y-2">
-              {needsAction.map((c) => (
-                <li key={c.id} className="flex items-center justify-between rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <Pill tone={statusTone(c.status)}>{c.status}</Pill>
-                    <span className="text-zinc-200">{c.project}</span>
-                  </div>
-                  <span className="text-xs text-zinc-500">{c.dueAt || "-"}</span>
-                </li>
-              ))}
-              {!needsAction.length && <div className="text-zinc-500">All set.</div>}
-            </ul>
+            <div className="flex flex-col h-full">
+              <ul className={`space-y-2 flex-1 ${showCollabPagination ? "overflow-y-auto pr-1" : ""}`}>
+                {collabPageItems.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Pill tone={statusTone(c.status)}>{c.status}</Pill>
+                      <span className="text-zinc-200">{c.project}</span>
+                    </div>
+                    <span className="text-xs text-zinc-500">{c.dueAt || "-"}</span>
+                  </li>
+                ))}
+                {!needsAction.length && <div className="text-zinc-500">All set.</div>}
+              </ul>
+              <div className="mt-3 h-8 flex items-center justify-between text-xs text-zinc-400">
+                {showCollabPagination && needsAction.length > collabPageSize ? (
+                  <>
+                    <button
+                      onClick={() => setCollabPage((p) => Math.max(0, p - 1))}
+                      disabled={collabPage === 0}
+                      className={`px-2 py-1 rounded-md border border-zinc-800 ${collabPage === 0 ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-800/40"}`}
+                    >
+                      Prev
+                    </button>
+                    <div>
+                      Page {collabPage + 1} / {collabTotalPages}
+                    </div>
+                    <button
+                      onClick={() => setCollabPage((p) => Math.min(collabTotalPages - 1, p + 1))}
+                      disabled={collabPage >= collabTotalPages - 1}
+                      className={`px-2 py-1 rounded-md border border-zinc-800 ${collabPage >= collabTotalPages - 1 ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-800/40"}`}
+                    >
+                      Next
+                    </button>
+                  </>
+                ) : (
+                  <span />
+                )}
+              </div>
+            </div>
           </Card>
 
           {/* Crypto cards (dynamic) */}
@@ -458,7 +501,7 @@ function Card({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-zinc-200 font-semibold text-sm">{title}</h3>
         {typeof badgeCount === "number" && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-800/40 text-rose-200 border border-rose-700/50">
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-600/20 text-white border border-blue-500/30 ring-1 ring-blue-500/30">
             {badgeCount}
           </span>
         )}
@@ -551,7 +594,7 @@ function ProfileCard({
   return (
     <div className={`rounded-2xl bg-zinc-900/70 border border-zinc-800 p-5 ${className}`}>
       <div className="flex items-center gap-5">
-        <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-xl">
+        <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-2 border-blue-500/50 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/30">
           <Image src={imageSrc} alt={name} fill className="object-cover" />
         </div>
         <div className="min-w-0">
