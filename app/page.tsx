@@ -165,7 +165,10 @@ export default function DashboardPage() {
     };
 
     let alive = true;
-    async function fetchCoins() {
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 10_000; // 10 seconds
+    async function fetchCoinsWithRetry() {
       try {
         // current prices + 24h change
         const priceUrl =
@@ -175,59 +178,71 @@ export default function DashboardPage() {
         const priceData = await priceRes.json();
 
         // historical for charts (1 day, hourly to keep points manageable)
-        const histPromises = (["bitcoin", "ethereum", "solana"] as string[]).map((id) =>
+        const histPromises = (["bitcoin", "ethereum", "solana"]).map((id) =>
           fetch(
             `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=1&interval=hourly`
           )
         );
         const histRes = await Promise.all(histPromises);
-        const histJson = await Promise.all(histRes.map((r) => r.json()));
+        const histJson = await Promise.all(histRes.map(async (r, idx) => {
+          if (!r.ok) {
+            const text = await r.text();
+            console.error(`Historical price fetch failed for ${["bitcoin","ethereum","solana"][idx]}: ${r.status} - ${text}`);
+            return null;
+          }
+          return r.json();
+        }));
 
         if (!alive) return;
-
         const updated: Coin[] = [
           {
-            symbol: "BTC",
+            symbol: "BTC" as const,
             name: "Bitcoin",
             price: Number(priceData.bitcoin?.usd ?? initialCoins[0].price),
             changePct: Number(priceData.bitcoin?.usd_24h_change ?? initialCoins[0].changePct),
             series:
               Array.isArray(histJson[0]?.prices) && histJson[0].prices.length
-                ? histJson[0].prices.map((p: any) => Number(p[1]))
+                ? histJson[0].prices.map((p: [number, number]) => Number(p[1]))
                 : initialCoins[0].series,
           },
           {
-            symbol: "ETH",
+            symbol: "ETH" as const,
             name: "Ethereum",
             price: Number(priceData.ethereum?.usd ?? initialCoins[1].price),
             changePct: Number(priceData.ethereum?.usd_24h_change ?? initialCoins[1].changePct),
             series:
               Array.isArray(histJson[1]?.prices) && histJson[1].prices.length
-                ? histJson[1].prices.map((p: any) => Number(p[1]))
+                ? histJson[1].prices.map((p: [number, number]) => Number(p[1]))
                 : initialCoins[1].series,
           },
           {
-            symbol: "SOL",
+            symbol: "SOL" as const,
             name: "Solana",
             price: Number(priceData.solana?.usd ?? initialCoins[2].price),
             changePct: Number(priceData.solana?.usd_24h_change ?? initialCoins[2].changePct),
             series:
               Array.isArray(histJson[2]?.prices) && histJson[2].prices.length
-                ? histJson[2].prices.map((p: any) => Number(p[1]))
+                ? histJson[2].prices.map((p: [number, number]) => Number(p[1]))
                 : initialCoins[2].series,
           },
         ];
-
         setCoins(updated);
         setLoadingCoins(false);
+        retryCount = 0; // reset retries on success
       } catch (e) {
         console.error("Failed to fetch coin data", e);
         setLoadingCoins(false);
+        if (alive && retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(fetchCoinsWithRetry, retryDelay);
+        } else if (!alive) {
+          // user navigated away
+          return;
+        }
       }
     }
-
-    fetchCoins();
-    const interval = setInterval(fetchCoins, 60_000); // refresh each minute
+    fetchCoinsWithRetry();
+    const interval = setInterval(fetchCoinsWithRetry, 60_000); // refresh each minute
     return () => {
       alive = false;
       clearInterval(interval);
