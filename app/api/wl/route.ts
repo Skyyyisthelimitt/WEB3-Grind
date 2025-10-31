@@ -1,5 +1,6 @@
 // app/api/wl/route.ts
 import { NextResponse } from "next/server";
+import { google } from "googleapis";
 
 type Chain = "ETH" | "SOL" | "BTC" | "APE" | "BASE" | "ABS" | "Monad" | "HYPER";
 type WLType = "GTD" | "FCFS" | "OG" | "WL";
@@ -12,7 +13,7 @@ type WL = {
   type: WLType;
   wallets?: string;
   mintDate?: string;
-  price?: number;
+  price?: string; // Changed to string to preserve symbols
   priority?: Priority;
   status?: "Not Minted" | "Minted";
 };
@@ -97,7 +98,7 @@ function mapRows(values: string[][]): WL[] {
     const chain = normalizeChain(pick(row, map, ["Chain"]));
     const wallets = pick(row, map, ["Wallet","Wallets"]).trim() || undefined;
     const mintDate = toISO(pick(row, map, ["Mint Date","MintDate"]));
-    const price = toNum(pick(row, map, ["Mint Price","Price","MintPrice"]));
+    const priceRaw = pick(row, map, ["Mint Price","Price","MintPrice"]).trim(); // pass as string!
 
     return {
       id: i + 1,
@@ -107,7 +108,7 @@ function mapRows(values: string[][]): WL[] {
       type,
       wallets,
       mintDate,
-      price,
+      price: priceRaw || undefined, // string not number!
       priority: "Potential",
       status: "Not Minted",
     };
@@ -118,14 +119,26 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-  
-    // Public CSV fallback (no billing / no auth)
-    const csvUrl = process.env.SHEET_CSV_URL;
-    if (!csvUrl) return NextResponse.json({ wls: [] }, { headers: { "Cache-Control": "s-maxage=30" } });
+    // Fetch the WHITELIST sheet from your Google Spreadsheet via Google Sheets API
+    const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8"; // same as collabs API
+    const range = "WHITELIST!A1:G"; // Update range as desired, covers all columns
 
-    const res = await fetch(csvUrl, { next: { revalidate: 60 } });
-    const text = await res.text();
-    return NextResponse.json({ wls: mapRows(parseCSV(text)) }, { headers: { "Cache-Control": "s-maxage=60" } });
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    });
+
+    const sheets = google.sheets({ version: "v4", auth });
+    const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
+    const values = res.data.values || [];
+
+    // Reuse your mapRows logic to normalize
+    const wls = mapRows(values);
+
+    return NextResponse.json({ wls });
   } catch (e: any) {
     console.error("WL API error:", e?.message || e);
     return NextResponse.json({ error: "Failed to load whitelists" }, { status: 500 });

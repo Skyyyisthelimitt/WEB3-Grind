@@ -89,7 +89,7 @@ export default function WhitelistsPage() {
             {filtered.map((r) => (
               <tr key={r.id} className="border-t border-zinc-900 hover:bg-white/5 transition">
                 <Td className="font-medium">{r.project}</Td>
-                <Td>{r.x ? <a href={r.x} target="_blank" className="text-violet-400 hover:underline">link</a> : "-"}</Td>
+                <Td>{r.x ? <a href={r.x} target="_blank" className="text-violet-400 hover:underline">{r.x}</a> : "-"}</Td>
                 <Td>{r.type}</Td>
                 <Td>{r.chain}</Td>
                 <Td>{r.wallets || "-"}</Td>
