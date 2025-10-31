@@ -58,6 +58,7 @@ type Collab = {
   status: CollabStatus;
   giveawayLink?: string;
   dueAt?: string;
+  community?: string;
 };
 
 type Coin = {
@@ -417,7 +418,18 @@ useEffect(() => {
                   <li key={c.id} className="flex items-center justify-between rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Pill tone={statusTone(c.status)}>{c.status}</Pill>
-                      <span className="text-zinc-200">{c.project}</span>
+                      <span className="text-zinc-200">
+                        {c.project}
+                        {c.community ? (
+                          <span className="text-xs text-zinc-400 ml-2">
+                            (
+                            {/^https?:\/\//i.test(c.community)
+                              ? (() => { try { const u = new URL(c.community); return (u.hostname || "").replace(/^www\./, ""); } catch { return "link"; } })()
+                              : c.community}
+                            )
+                          </span>
+                        ) : null}
+                      </span>
                     </div>
                     <span className="text-xs text-zinc-500">{c.dueAt || "-"}</span>
                   </li>
