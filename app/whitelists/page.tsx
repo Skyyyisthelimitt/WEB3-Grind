@@ -101,10 +101,6 @@ export default function WhitelistsPage() {
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-zinc-500">
-        Source: Google Sheet → <code>/api/wl</code>. If you don’t see your rows, open{" "}
-        <Link href="/api/wl" className="text-violet-400 hover:underline">/api/wl</Link> to confirm the API is returning data.
-      </p>
     </div>
   );
 }

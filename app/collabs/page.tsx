@@ -68,12 +68,10 @@ export default function CollabsPage() {
                     </td>
                     <td className="px-4 py-2">
                       {c.community ? (
-                        <a href={c.community} className="text-blue-400 hover:underline" target="_blank">
-                          {c.communityType || 'Community'} {/* Show community type if available */}
-                        </a>
-                      ) : (
-                        "-"
-                      )}
+                        c.community.match(/^https?:\/\//i)
+                          ? <a href={c.community} className="text-blue-400 hover:underline" target="_blank">{c.community}</a>
+                          : c.community
+                      ) : "-"}
                     </td>
                     <td className="px-4 py-2">{c.spots}</td>
                     <td className="px-4 py-2">{c.teamSpots}</td>
