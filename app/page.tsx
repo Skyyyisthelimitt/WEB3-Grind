@@ -276,15 +276,7 @@ useEffect(() => {
   );
 
   const needsAction = useMemo(() => {
-    const now = new Date();
-    const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    return collabs
-      .filter((c) => {
-        const dueSoon = c.dueAt ? new Date(c.dueAt) <= soon : false;
-        const missingLink = !c.giveawayLink;
-        return (dueSoon || missingLink) && c.status !== "Cancel";
-      })
-      .slice(0, 3);
+    return collabs.filter((c) => c.status === "Not Posted");
   }, [collabs]);
 
   const filteredWL = useMemo(() => {
