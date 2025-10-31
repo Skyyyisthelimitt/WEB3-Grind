@@ -306,15 +306,12 @@ useEffect(() => {
     );
   }, [wls, q]);
 
-  const quote = useMemo(() => {
-    const quotes = [
-      "Small consistent reps beat random big pushes.",
-      "Focus on what compounds.",
-      "Ship, learn, iterate.",
-      "Protect guaranteed wins first.",
-      "Today’s inputs create tomorrow’s outcomes.",
-    ];
-    return quotes[Math.floor(Math.random() * quotes.length)];
+  const [dailyQuote, setDailyQuote] = useState<{ text: string; author?: string } | null>(null);
+  useEffect(() => {
+    fetch('/api/daily-quote', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((q) => setDailyQuote(q))
+      .catch(() => setDailyQuote({ text: "Ship, learn, iterate.", author: "" }));
   }, []);
 
   return (
@@ -471,9 +468,14 @@ useEffect(() => {
             role="Founder & Collab Manager"
           />
           <DailyBibleVerseCard />
-          <Card title="Motivational" className="h-24">
-            <div className="h-full grid place-items-center text-sm text-zinc-200 text-center px-2">
-              “{quote}”
+          <Card title="Motivational" className="h-28">
+            <div className="h-full flex flex-col items-center justify-center text-center px-3">
+              <div className="text-zinc-100 italic text-[15px] leading-snug">
+                “{dailyQuote?.text || '…'}”
+              </div>
+              {dailyQuote?.author ? (
+                <div className="mt-1 text-xs text-zinc-400">— {dailyQuote.author}</div>
+              ) : null}
             </div>
           </Card>
           <MiniCalendar wls={filteredWL} />
@@ -623,6 +625,7 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
+  const monthLabel = new Date(year, month, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
 
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -658,6 +661,7 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
       <div className="flex items-center justify-between mb-3">
         <div>
           <div className="text-zinc-200 font-semibold text-sm">Whitelist Calendar</div>
+          <div className="text-zinc-400 text-xs leading-none mt-0.5">{monthLabel}</div>
         </div>
         <div className="text-zinc-500 text-sm">⋯</div>
       </div>
@@ -800,7 +804,7 @@ function DailyBibleVerseCard() {
   const [verse, setVerse] = useState<{ text: string, reference: string } | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    fetch('https://beta.ourmanna.com/api/v1/get/?format=json')
+    fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily')
       .then(res => res.json())
       .then(data => {
         setVerse({
@@ -811,14 +815,14 @@ function DailyBibleVerseCard() {
       });
   }, []);
   return (
-    <div className="rounded-2xl bg-zinc-900/70 border border-zinc-800 px-6 py-6 mb-5">
-      <div className="font-bold text-zinc-200 mb-2 text-[16px]">Daily Bible Verse</div>
+    <div className="rounded-2xl bg-zinc-900/70 border border-zinc-800 px-5 py-4 mb-4">
+      <div className="font-bold text-zinc-200 mb-1 text-[15px]">Daily Bible Verse</div>
       {loading ? (
         <div className="text-zinc-400 text-sm">Loading…</div>
       ) : verse ? (
         <>
-          <div className="text-zinc-100 italic text-[15px] mb-1">“{verse.text}”</div>
-          <div className="text-zinc-400 text-xs text-right">{verse.reference}</div>
+          <div className="text-zinc-100 italic text-[14px] mb-1 leading-snug">“{verse.text}”</div>
+          <div className="text-zinc-400 text-[11px] text-right">{verse.reference}</div>
         </>
       ) : (
         <div className="text-zinc-400 text-sm">No verse for today.</div>
