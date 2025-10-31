@@ -366,7 +366,7 @@ useEffect(() => {
             className="h-28"
           />
 
-          <Card title="Summary WL" className="h-[360px]">
+          <Card title="Summary WL" className="h-[420px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={pie} dataKey="value" nameKey="name" outerRadius={116}>
@@ -380,7 +380,7 @@ useEffect(() => {
             </ResponsiveContainer>
           </Card>
 
-          <Card title="Recent Activity" className="h-[360px]">
+          <Card title="Recent Activity" className="h-[420px]">
             <ul className="space-y-2">
               {recent.map((e, i) => (
                 <li
@@ -399,7 +399,7 @@ useEffect(() => {
             </ul>
           </Card>
 
-          <Card title="Collabs — Action Required" className="h-[360px]" badgeCount={needsAction.length}>
+          <Card title="Collabs — Action Required" className="h-[420px]" badgeCount={needsAction.length}>
             <ul className="space-y-2">
               {needsAction.map((c) => (
                 <li key={c.id} className="flex items-center justify-between rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2">
@@ -431,16 +431,17 @@ useEffect(() => {
           <ProfileCard
             imageSrc={pfp}
             name="Skyyy"
-            x="0xSkyisthelimit"
+            x="0xSkyisthelimitt"
             discord="Skyisthelimitt"
             role="Founder & Collab Manager"
           />
-          <MiniCalendar wls={filteredWL} />
+          <DailyBibleVerseCard />
           <Card title="Motivational" className="h-24">
             <div className="h-full grid place-items-center text-sm text-zinc-200 text-center px-2">
               “{quote}”
             </div>
           </Card>
+          <MiniCalendar wls={filteredWL} />
         </div>
       </div>
     </div>
@@ -621,13 +622,13 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
     <div className="rounded-2xl bg-zinc-900/70 border border-zinc-800 p-4">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <div className="text-zinc-200 font-semibold text-sm">Onboarding calendar</div>
+          <div className="text-zinc-200 font-semibold text-sm">Whitelist Calendar</div>
         </div>
         <div className="text-zinc-500 text-sm">⋯</div>
       </div>
 
       <div className="grid grid-cols-7 text-[10px] text-zinc-400 mb-1">
-        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
+        {["Sun","Mon","Tue","Wed","Thu","Fri","S                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          at"].map((d) => (
           <div key={d} className="text-center py-0.5">{d}</div>
         ))}
       </div>
@@ -640,12 +641,14 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
             c.dateStr ===
               `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
           return (
-            <div
+            <div                                                                                                                                                                                                                                                                                                                                                                                
               key={i}
               className={`h-7 rounded-md grid place-items-center text-[11px]
                 ${c.muted ? "text-zinc-600" : "text-zinc-200"}
-                ${isToday ? "ring-1 ring-zinc-500" : ""}
-                ${isMint ? "bg-violet-500/20 border border-violet-500/30" : "bg-zinc-900/60 border border-zinc-800"}
+                ${isToday ? "text-blue-500" : ""}
+                ${isToday
+                  ? "bg-blue-600/10 ring-1 ring-blue-500/30 border border-blue-500/20"
+                  : (isMint ? "bg-violet-500/20 border border-violet-500/30" : "bg-zinc-900/60 border border-zinc-800")}
               `}
             >
               {c.label}
@@ -754,6 +757,37 @@ function CryptoCard({ coin }: { coin: Coin }) {
           </ResponsiveContainer>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DailyBibleVerseCard() {
+  const [verse, setVerse] = useState<{ text: string, reference: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch('https://beta.ourmanna.com/api/v1/get/?format=json')
+      .then(res => res.json())
+      .then(data => {
+        setVerse({
+          text: data.verse.details.text,
+          reference: data.verse.details.reference
+        });
+        setLoading(false);
+      });
+  }, []);
+  return (
+    <div className="rounded-2xl bg-zinc-900/70 border border-zinc-800 px-6 py-6 mb-5">
+      <div className="font-bold text-zinc-200 mb-2 text-[16px]">Daily Bible Verse</div>
+      {loading ? (
+        <div className="text-zinc-400 text-sm">Loading…</div>
+      ) : verse ? (
+        <>
+          <div className="text-zinc-100 italic text-[15px] mb-1">“{verse.text}”</div>
+          <div className="text-zinc-400 text-xs text-right">{verse.reference}</div>
+        </>
+      ) : (
+        <div className="text-zinc-400 text-sm">No verse for today.</div>
+      )}
     </div>
   );
 }
