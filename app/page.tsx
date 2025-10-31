@@ -352,7 +352,7 @@ useEffect(() => {
           </div>
           <Link
             href="/whitelists"
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-gradient-to-br from-sky-500 to-cyan-400 text-white hover:from-sky-400 hover:to-cyan-300 shadow-lg ring-1 ring-white/6 transition-transform active:scale-95"
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-blue-500 hover:bg-blue-600/20 hover:text-blue-400 shadow-lg ring-1 ring-white/6 transition-transform active:scale-95"
           >
             + Add Whitelist
           </Link>
