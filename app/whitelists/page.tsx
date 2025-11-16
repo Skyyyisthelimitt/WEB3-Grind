@@ -22,6 +22,7 @@ export default function WhitelistsPage() {
   const [rows, setRows] = useState<WL[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -144,12 +145,34 @@ export default function WhitelistsPage() {
               </button>
             </div>
             
-            <form onSubmit={(e) => {
+            <form onSubmit={async (e) => {
               e.preventDefault();
-              console.log("Form data:", formData);
-              // TODO: Submit to API/Google Sheet
-              setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
-              setIsModalOpen(false);
+              setIsSubmitting(true);
+              try {
+                const res = await fetch("/api/wl", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(formData),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                  alert(data.error || "Failed to add whitelist");
+                  setIsSubmitting(false);
+                  return;
+                }
+                // Reset form and close modal
+                setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+                setIsModalOpen(false);
+                setIsSubmitting(false);
+                // Refresh the whitelist list
+                const refreshRes = await fetch("/api/wl", { cache: "no-store" });
+                const refreshJson = await refreshRes.json();
+                setRows(Array.isArray(refreshJson?.wls) ? refreshJson.wls : []);
+              } catch (error) {
+                console.error("Error submitting form:", error);
+                alert("Failed to add whitelist. Please try again.");
+                setIsSubmitting(false);
+              }
             }} className="p-6 space-y-4">
               {/* Project Name */}
               <div>
@@ -268,9 +291,10 @@ export default function WhitelistsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add Whitelist
+                  {isSubmitting ? "Adding..." : "Add Whitelist"}
                 </button>
               </div>
             </form>

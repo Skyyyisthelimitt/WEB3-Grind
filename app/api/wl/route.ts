@@ -117,20 +117,25 @@ function mapRows(values: string[][]): WL[] {
 
 export const runtime = "nodejs";
 
+const getAuth = (readOnly = true) => {
+  return new google.auth.GoogleAuth({
+    credentials: {
+      client_email: process.env.GOOGLE_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    },
+    scopes: readOnly 
+      ? ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+      : ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+};
+
 export async function GET() {
   try {
     // Fetch the WHITELIST sheet from your Google Spreadsheet via Google Sheets API
     const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8"; // same as collabs API
     const range = "WHITELIST!A1:G"; // Update range as desired, covers all columns
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-    });
-
+    const auth = getAuth(true);
     const sheets = google.sheets({ version: "v4", auth });
     const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
     const values = res.data.values || [];
@@ -142,5 +147,50 @@ export async function GET() {
   } catch (e: any) {
     console.error("WL API error:", e?.message || e);
     return NextResponse.json({ error: "Failed to load whitelists" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { project, x, type, chain, wallet, mintDate, mintPrice } = body;
+
+    // Validate required fields
+    if (!project || !type || !chain || !wallet) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8";
+    const range = "WHITELIST!A:G"; // Append to the end of the sheet
+
+    const auth = getAuth(false); // Need write permissions
+    const sheets = google.sheets({ version: "v4", auth });
+
+    // Prepare the row data matching your sheet columns: ProjectName, X, Type, Chain, Wallet, Mint Date, Mint Price
+    const rowData = [
+      project || "",
+      x || "",
+      type || "",
+      chain || "",
+      wallet || "",
+      mintDate || "",
+      mintPrice || "",
+    ];
+
+    // Append the row to the sheet
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range,
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: {
+        values: [rowData],
+      },
+    });
+
+    return NextResponse.json({ success: true, message: "Whitelist added successfully" });
+  } catch (e: any) {
+    console.error("WL POST error:", e?.message || e);
+    return NextResponse.json({ error: "Failed to add whitelist: " + (e?.message || "Unknown error") }, { status: 500 });
   }
 }
