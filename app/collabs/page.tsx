@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 
 export default function CollabsPage() {
   const [collabs, setCollabs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [q, setQ] = useState("");
   const searchParams = useSearchParams();
   const tab = searchParams?.get("tab") || "ongoing";
 
@@ -29,11 +30,41 @@ export default function CollabsPage() {
       });
   }, [tab]);
 
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return collabs;
+    return collabs.filter((c: any) =>
+      [c.project, c.twitter, c.community, c.status, c.spots].filter(Boolean).join(" ").toLowerCase().includes(s)
+    );
+  }, [collabs, q]);
+
   return (
     <div className="p-6 text-gray-100">
-      <h1 className="text-2xl font-semibold mb-4">
-        Collab Management - {tab === "done" ? "Done" : "Ongoing"}
-      </h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-semibold">
+          Collab Management - {tab === "done" ? "Done" : "Ongoing"} <span className="text-sm text-zinc-500">({filtered.length})</span>
+        </h1>
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          <div className="relative flex-1 max-w-[420px]">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search whitelists or collabs…"
+              className="w-full rounded-xl bg-zinc-900/70 border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"></span>
+          </div>
+          <button
+            onClick={() => {
+              // TODO: Open add collab modal
+              console.log("Add collab clicked");
+            }}
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
+          >
+            + Add Collab
+          </button>
+        </div>
+      </div>
       <div className="border border-gray-800 rounded-lg">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-gray-300">
@@ -57,8 +88,8 @@ export default function CollabsPage() {
                     Loading...
                   </td>
                 </tr>
-              ) : collabs.length > 0 ? (
-                collabs.map((c: any) => (
+              ) : filtered.length > 0 ? (
+                filtered.map((c: any) => (
                   <tr key={c.id} className="hover:bg-gray-800/40">
                     <td className="px-4 py-2">{c.project}</td>
                     <td className="px-4 py-2">
@@ -106,7 +137,7 @@ export default function CollabsPage() {
               ) : (
                 <tr>
                   <td colSpan={9} className="px-4 py-2 text-center text-gray-500">
-                    No {tab} collabs found
+                    {q.trim() ? "No collabs match your search" : `No ${tab} collabs found`}
                   </td>
                 </tr>
               )}
