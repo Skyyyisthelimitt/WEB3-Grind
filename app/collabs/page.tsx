@@ -6,8 +6,23 @@ export default function CollabsPage() {
   const [collabs, setCollabs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const searchParams = useSearchParams();
   const tab = searchParams?.get("tab") || "ongoing";
+
+  // Form state
+  const [formData, setFormData] = useState({
+    project: "",
+    twitter: "",
+    community: "",
+    spots: "",
+    teamSpots: "",
+    status: "",
+    dueAt: "",
+    giveawayLink: "",
+    winners: "",
+  });
 
   useEffect(() => {
     setLoading(true);
@@ -56,8 +71,8 @@ export default function CollabsPage() {
           </div>
           <button
             onClick={() => {
-              // TODO: Open add collab modal
-              console.log("Add collab clicked");
+              setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+              setIsModalOpen(true);
             }}
             className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
           >
@@ -145,6 +160,198 @@ export default function CollabsPage() {
           </table>
         </div>
       </div>
+
+      {/* Add Collab Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => {
+          setIsModalOpen(false);
+          setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+        }}>
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-zinc-100">Add Collab</h2>
+                <p className="text-sm text-zinc-400 mt-1">Add a new collab entry to your {tab} sheet</p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                }}
+                className="text-zinc-400 hover:text-zinc-100 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSubmitting(true);
+              try {
+                const res = await fetch("/api/collabs", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ ...formData, tab }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                  alert(data.error || "Failed to add collab");
+                  setIsSubmitting(false);
+                  return;
+                }
+                // Reset form and close modal
+                setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                setIsModalOpen(false);
+                setIsSubmitting(false);
+                // Refresh the collabs list
+                const refreshRes = await fetch(`/api/collabs?tab=${tab}`);
+                const refreshJson = await refreshRes.json();
+                const filteredCollabs = (refreshJson.collabs || []).filter((collab: any) => 
+                  collab.project || collab.twitter || collab.community || collab.spots
+                );
+                setCollabs(filteredCollabs);
+              } catch (error) {
+                console.error("Error submitting form:", error);
+                alert("Failed to add collab. Please try again.");
+                setIsSubmitting(false);
+              }
+            }} className="p-6 space-y-4">
+              {/* Project */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Project *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.project}
+                  onChange={(e) => setFormData({ ...formData, project: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                  placeholder="Enter project name"
+                />
+              </div>
+
+              {/* Twitter */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Twitter/X Link</label>
+                <input
+                  type="url"
+                  value={formData.twitter}
+                  onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                  placeholder="https://x.com/..."
+                />
+              </div>
+
+              {/* Community */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Community</label>
+                <input
+                  type="text"
+                  value={formData.community}
+                  onChange={(e) => setFormData({ ...formData, community: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                  placeholder="e.g., Doosin Alpha, Viriya, Minted"
+                />
+              </div>
+
+              {/* Spots */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Spots</label>
+                <input
+                  type="text"
+                  value={formData.spots}
+                  onChange={(e) => setFormData({ ...formData, spots: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                  placeholder="e.g., 5 GTD, 20 FCFS"
+                />
+              </div>
+
+              {/* Team Spots */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Team Spots</label>
+                <input
+                  type="text"
+                  value={formData.teamSpots}
+                  onChange={(e) => setFormData({ ...formData, teamSpots: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                  placeholder="Enter team spots"
+                />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                >
+                  <option value="">Select status</option>
+                  <option value="Not Posted">Not Posted</option>
+                  <option value="Posted">Posted</option>
+                  <option value="Submitted">Submitted</option>
+                  <option value="Cancel">Cancel</option>
+                </select>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Due Date</label>
+                <input
+                  type="date"
+                  value={formData.dueAt}
+                  onChange={(e) => setFormData({ ...formData, dueAt: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                />
+              </div>
+
+              {/* Giveaway Link */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Giveaway Link (GA)</label>
+                <input
+                  type="url"
+                  value={formData.giveawayLink}
+                  onChange={(e) => setFormData({ ...formData, giveawayLink: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                  placeholder="https://..."
+                />
+              </div>
+
+              {/* Winners */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Winners Link</label>
+                <input
+                  type="url"
+                  value={formData.winners}
+                  onChange={(e) => setFormData({ ...formData, winners: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                  placeholder="https://..."
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                  }}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-800/50 text-zinc-300 border border-zinc-700 hover:bg-zinc-800 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? "Adding..." : "Add Collab"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
