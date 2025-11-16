@@ -101,7 +101,7 @@ function mapRows(values: string[][]): WL[] {
     const priceRaw = pick(row, map, ["Mint Price","Price","MintPrice"]).trim(); // pass as string!
 
     return {
-      id: i + 1,
+      id: i + 2, // i+2 because: i is 0-based in slice(1), so first data row (sheet row 2) gets id=2
       project,
       x,
       chain,
@@ -193,4 +193,110 @@ export async function POST(req: Request) {
     console.error("WL POST error:", e?.message || e);
     return NextResponse.json({ error: "Failed to add whitelist: " + (e?.message || "Unknown error") }, { status: 500 });
   }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const { project, x, type, chain, wallet, mintDate, mintPrice } = body;
+
+    // Validate required fields
+    if (!project || !type || !chain || !wallet) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8";
+    const sheetName = "WHITELIST";
+    
+    // ID is the sheet row number (row 1 = header, row 2+ = data)
+    const sheetRowNumber = parseInt(id, 10);
+    if (isNaN(sheetRowNumber) || sheetRowNumber < 2) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
+    
+    const range = `${sheetName}!A${sheetRowNumber}:G${sheetRowNumber}`;
+
+    // Prepare the row data
+    const rowData = [
+      project || "",
+      x || "",
+      type || "",
+      chain || "",
+      wallet || "",
+      mintDate || "",
+      mintPrice || "",
+    ];
+
+    // Update the row
+    const writeAuth = getAuth(false);
+    const writeSheets = google.sheets({ version: "v4", auth: writeAuth });
+    await writeSheets.spreadsheets.values.update({
+      spreadsheetId,
+      range,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [rowData],
+      },
+    });
+
+    return NextResponse.json({ success: true, message: "Whitelist updated successfully" });
+  } catch (e: any) {
+    console.error("WL PUT error:", e?.message || e);
+    return NextResponse.json({ error: "Failed to update whitelist: " + (e?.message || "Unknown error") }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
+    }
+
+    const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8";
+    const sheetName = "WHITELIST";
+    
+    // ID is the sheet row number (row 1 = header, row 2+ = data)
+    const sheetRowNumber = parseInt(id, 10);
+    if (isNaN(sheetRowNumber) || sheetRowNumber < 2) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
+
+    // Delete the row
+    const writeAuth = getAuth(false);
+    const writeSheets = google.sheets({ version: "v4", auth: writeAuth });
+    await writeSheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [{
+          deleteDimension: {
+            range: {
+              sheetId: await getSheetId(writeSheets, spreadsheetId, sheetName),
+              dimension: "ROWS",
+              startIndex: sheetRowNumber - 1, // 0-based index
+              endIndex: sheetRowNumber,
+            },
+          },
+        }],
+      },
+    });
+
+    return NextResponse.json({ success: true, message: "Whitelist deleted successfully" });
+  } catch (e: any) {
+    console.error("WL DELETE error:", e?.message || e);
+    return NextResponse.json({ error: "Failed to delete whitelist: " + (e?.message || "Unknown error") }, { status: 500 });
+  }
+}
+
+async function getSheetId(sheets: any, spreadsheetId: string, sheetName: string): Promise<number> {
+  const res = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheet = res.data.sheets?.find((s: any) => s.properties.title === sheetName);
+  return sheet?.properties.sheetId || 0;
 }

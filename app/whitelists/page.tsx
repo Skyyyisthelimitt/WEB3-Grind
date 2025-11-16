@@ -23,6 +23,7 @@ export default function WhitelistsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -34,6 +35,26 @@ export default function WhitelistsPage() {
     mintDate: "",
     mintPrice: "",
   });
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`/api/wl?id=${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to delete whitelist");
+        return;
+      }
+      // Refresh the list
+      const refreshRes = await fetch("/api/wl", { cache: "no-store" });
+      const refreshJson = await refreshRes.json();
+      setRows(Array.isArray(refreshJson?.wls) ? refreshJson.wls : []);
+    } catch (error) {
+      console.error("Error deleting whitelist:", error);
+      alert("Failed to delete whitelist. Please try again.");
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -75,7 +96,11 @@ export default function WhitelistsPage() {
             <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"></span>
           </div>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+              setEditingId(null);
+              setIsModalOpen(true);
+            }}
             className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
           >
             + Add Whitelist
@@ -94,15 +119,16 @@ export default function WhitelistsPage() {
               <Th>Wallet</Th>
               <Th>Mint Date</Th>
               <Th>Mint Price</Th>
+              <Th>Actions</Th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={7} className="py-10 text-center text-zinc-500">Loading…</td></tr>
+              <tr><td colSpan={8} className="py-10 text-center text-zinc-500">Loading…</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-10 text-center text-zinc-500">
+                <td colSpan={8} className="py-10 text-center text-zinc-500">
                   No rows yet. Add one in your sheet or check <Link href="/api/wl" className="text-violet-400 hover:underline">/api/wl</Link>.
                 </td>
               </tr>
@@ -116,6 +142,38 @@ export default function WhitelistsPage() {
                 <Td>{r.wallets || "-"}</Td>
                 <Td>{r.mintDate || "-"}</Td>
                 <Td>{r.price ?? "-"}</Td>
+                <Td>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setFormData({
+                          project: r.project,
+                          x: r.x || "",
+                          type: r.type,
+                          chain: r.chain,
+                          wallet: r.wallets || "",
+                          mintDate: r.mintDate || "",
+                          mintPrice: r.price || "",
+                        });
+                        setEditingId(r.id);
+                        setIsModalOpen(true);
+                      }}
+                      className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to delete "${r.project}"?`)) {
+                          handleDelete(r.id);
+                        }
+                      }}
+                      className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </Td>
               </tr>
             ))}
           </tbody>
@@ -127,17 +185,19 @@ export default function WhitelistsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => {
           setIsModalOpen(false);
           setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+          setEditingId(null);
         }}>
           <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-zinc-100">Add Whitelist</h2>
-                <p className="text-sm text-zinc-400 mt-1">Add a new whitelist entry to your sheet</p>
+                <h2 className="text-xl font-semibold text-zinc-100">{editingId ? "Edit Whitelist" : "Add Whitelist"}</h2>
+                <p className="text-sm text-zinc-400 mt-1">{editingId ? "Update whitelist entry" : "Add a new whitelist entry to your sheet"}</p>
               </div>
               <button
                 onClick={() => {
                   setIsModalOpen(false);
                   setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+                  setEditingId(null);
                 }}
                 className="text-zinc-400 hover:text-zinc-100 text-2xl leading-none"
               >
@@ -149,19 +209,22 @@ export default function WhitelistsPage() {
               e.preventDefault();
               setIsSubmitting(true);
               try {
-                const res = await fetch("/api/wl", {
-                  method: "POST",
+                const url = editingId ? `/api/wl?id=${editingId}` : "/api/wl";
+                const method = editingId ? "PUT" : "POST";
+                const res = await fetch(url, {
+                  method,
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(formData),
                 });
                 const data = await res.json();
                 if (!res.ok) {
-                  alert(data.error || "Failed to add whitelist");
+                  alert(data.error || `Failed to ${editingId ? "update" : "add"} whitelist`);
                   setIsSubmitting(false);
                   return;
                 }
                 // Reset form and close modal
                 setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+                setEditingId(null);
                 setIsModalOpen(false);
                 setIsSubmitting(false);
                 // Refresh the whitelist list
@@ -170,7 +233,7 @@ export default function WhitelistsPage() {
                 setRows(Array.isArray(refreshJson?.wls) ? refreshJson.wls : []);
               } catch (error) {
                 console.error("Error submitting form:", error);
-                alert("Failed to add whitelist. Please try again.");
+                alert(`Failed to ${editingId ? "update" : "add"} whitelist. Please try again.`);
                 setIsSubmitting(false);
               }
             }} className="p-6 space-y-4">
@@ -284,6 +347,7 @@ export default function WhitelistsPage() {
                   onClick={() => {
                     setIsModalOpen(false);
                     setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+                    setEditingId(null);
                   }}
                   className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-800/50 text-zinc-300 border border-zinc-700 hover:bg-zinc-800 transition"
                 >
@@ -294,7 +358,7 @@ export default function WhitelistsPage() {
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? "Adding..." : "Add Whitelist"}
+                  {isSubmitting ? (editingId ? "Updating..." : "Adding...") : (editingId ? "Update Whitelist" : "Add Whitelist")}
                 </button>
               </div>
             </form>
