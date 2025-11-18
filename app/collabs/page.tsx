@@ -2,6 +2,16 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 
+const COMMUNITIES = [
+  "Minted",
+  "HOC",
+  "Truth",
+  "Doosin Alpha",
+  "Viriya",
+  "Source Alpha",
+  "Aji Club",
+];
+
 export default function CollabsPage() {
   const [collabs, setCollabs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -244,13 +254,18 @@ export default function CollabsPage() {
               {/* Community */}
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-2">Community</label>
-                <input
-                  type="text"
+                <select
                   value={formData.community}
                   onChange={(e) => setFormData({ ...formData, community: e.target.value })}
-                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
-                  placeholder="e.g., Doosin Alpha, Viriya, Minted"
-                />
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                >
+                  <option value="">Select community</option>
+                  {COMMUNITIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Spots */}
