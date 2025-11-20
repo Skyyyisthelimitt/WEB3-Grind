@@ -77,11 +77,18 @@ export async function POST(req: Request) {
 
     const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8";
     const sheetName = tab === "done" ? "COLLABS_DONE" : "COLLABS_ACTIVE";
-    const range = `${sheetName}!A:J`; // Columns A through J (Project through Deadline)
-
+    
     const auth = getAuth(false); // Need write permissions
     const sheets = google.sheets({ version: "v4", auth });
 
+    // First, find the last row with data in column A to determine where to append
+    const lastRowRange = `${sheetName}!A:A`;
+    const lastRowRes = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: lastRowRange,
+    });
+    const lastRow = (lastRowRes.data.values?.length || 0) + 1; // +1 to append after last row
+    
     // Prepare the row data matching your sheet columns: 
     // A: Project, B: X, C: Community, D: Spots, E: Contact, F: Team Spot, G: GA, H: Winners, I: Status, J: Deadline
     const rowData = [
@@ -97,20 +104,35 @@ export async function POST(req: Request) {
       dueAt || "",
     ];
 
-    // Append the row to the sheet
-    await sheets.spreadsheets.values.append({
+    // Use update instead of append to write to a specific row
+    const targetRange = `${sheetName}!A${lastRow}:J${lastRow}`;
+    const updateResult = await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range,
+      range: targetRange,
       valueInputOption: "USER_ENTERED",
-      insertDataOption: "INSERT_ROWS",
       requestBody: {
         values: [rowData],
       },
     });
 
-    return NextResponse.json({ success: true, message: "Collab added successfully" });
+    console.log("Update result:", {
+      updatedRange: updateResult.data.updatedRange,
+      updatedRows: updateResult.data.updatedRows,
+      updatedCells: updateResult.data.updatedCells,
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Collab added successfully",
+      updatedRange: updateResult.data.updatedRange,
+    });
   } catch (e: any) {
     console.error("Collab POST error:", e?.message || e);
-    return NextResponse.json({ error: "Failed to add collab: " + (e?.message || "Unknown error") }, { status: 500 });
+    const errorDetails = e?.response?.data || e?.code || e?.message || "Unknown error";
+    console.error("Error details:", JSON.stringify(errorDetails, null, 2));
+    return NextResponse.json({ 
+      error: "Failed to add collab: " + (e?.message || "Unknown error"),
+      details: errorDetails,
+    }, { status: 500 });
   }
 }

@@ -208,9 +208,12 @@ export default function CollabsPage() {
                   cache: "no-store",
                 });
                 const data = await res.json();
-                console.log("Response:", data);
+                console.log("Response status:", res.status);
+                console.log("Response data:", JSON.stringify(data, null, 2));
                 if (!res.ok) {
-                  alert(data.error || "Failed to add collab");
+                  const errorMsg = data.error || data.message || "Failed to add collab";
+                  console.error("API Error:", errorMsg);
+                  alert(`Error: ${errorMsg}`);
                   setIsSubmitting(false);
                   return;
                 }
