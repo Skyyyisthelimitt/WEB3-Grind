@@ -27,6 +27,7 @@ export default function CollabsPage() {
     twitter: "",
     community: "",
     spots: "",
+    contact: "",
     teamSpots: "",
     status: "",
     dueAt: "",
@@ -81,7 +82,7 @@ export default function CollabsPage() {
           </div>
           <button
             onClick={() => {
-              setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+              setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
               setIsModalOpen(true);
             }}
             className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
@@ -175,7 +176,7 @@ export default function CollabsPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => {
           setIsModalOpen(false);
-          setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+          setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
         }}>
           <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
@@ -186,7 +187,7 @@ export default function CollabsPage() {
               <button
                 onClick={() => {
                   setIsModalOpen(false);
-                  setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                  setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
                 }}
                 className="text-zinc-400 hover:text-zinc-100 text-2xl leading-none"
               >
@@ -198,32 +199,39 @@ export default function CollabsPage() {
               e.preventDefault();
               setIsSubmitting(true);
               try {
+                const payload = { ...formData, tab };
+                console.log("Submitting collab:", payload);
                 const res = await fetch("/api/collabs", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ ...formData, tab }),
+                  body: JSON.stringify(payload),
+                  cache: "no-store",
                 });
                 const data = await res.json();
+                console.log("Response:", data);
                 if (!res.ok) {
                   alert(data.error || "Failed to add collab");
                   setIsSubmitting(false);
                   return;
                 }
                 // Reset form and close modal
-                setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
                 setIsModalOpen(false);
                 setIsSubmitting(false);
                 // Refresh the collabs list
-                const refreshRes = await fetch(`/api/collabs?tab=${tab}`);
+                setLoading(true);
+                const refreshRes = await fetch(`/api/collabs?tab=${tab}`, { cache: "no-store" });
                 const refreshJson = await refreshRes.json();
                 const filteredCollabs = (refreshJson.collabs || []).filter((collab: any) => 
                   collab.project || collab.twitter || collab.community || collab.spots
                 );
                 setCollabs(filteredCollabs);
+                setLoading(false);
               } catch (error) {
                 console.error("Error submitting form:", error);
                 alert("Failed to add collab. Please try again.");
                 setIsSubmitting(false);
+                setLoading(false);
               }
             }} className="p-6 space-y-4">
               {/* Project */}
@@ -277,6 +285,18 @@ export default function CollabsPage() {
                   onChange={(e) => setFormData({ ...formData, spots: e.target.value })}
                   className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
                   placeholder="e.g., 5 GTD, 20 FCFS"
+                />
+              </div>
+
+              {/* Contact */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Contact</label>
+                <input
+                  type="text"
+                  value={formData.contact}
+                  onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                  placeholder="Enter contact (e.g., orpheuzkaze)"
                 />
               </div>
 
@@ -349,7 +369,7 @@ export default function CollabsPage() {
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
-                    setFormData({ project: "", twitter: "", community: "", spots: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                    setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
                   }}
                   className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-800/50 text-zinc-300 border border-zinc-700 hover:bg-zinc-800 transition"
                 >

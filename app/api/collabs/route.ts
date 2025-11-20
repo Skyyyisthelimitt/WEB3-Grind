@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { NextResponse } from "next/server";
 
 const getAuth = (readOnly = true) => {
   return new google.auth.GoogleAuth({
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
 
     const range = ranges[tab as keyof typeof ranges];
     if (!range) {
-      return Response.json({ error: "Invalid tab parameter" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid tab parameter" }, { status: 400 });
     }
 
     const auth = getAuth(true);
@@ -57,45 +58,43 @@ export async function GET(req: Request) {
     // Debug logging
     console.log(`Fetched ${collabs.length} collabs for tab: ${tab}`);
     
-    return Response.json({ collabs });
+    return NextResponse.json({ collabs });
   } catch (error: any) {
     console.error("❌ Error fetching Google Sheet:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { project, twitter, community, spots, teamSpots, status, dueAt, giveawayLink, winners, tab } = body;
+    const { project, twitter, community, spots, contact, teamSpots, status, dueAt, giveawayLink, winners, tab } = body;
 
     // Validate required fields
     if (!project) {
-      return Response.json({ error: "Project is required" }, { status: 400 });
+      return NextResponse.json({ error: "Project is required" }, { status: 400 });
     }
 
     const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8";
     const sheetName = tab === "done" ? "COLLABS_DONE" : "COLLABS_ACTIVE";
-    const range = `${sheetName}!A:L`; // Append to the end of the sheet
+    const range = `${sheetName}!A:J`; // Columns A through J (Project through Deadline)
 
     const auth = getAuth(false); // Need write permissions
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Prepare the row data matching your sheet columns: Project, Twitter, Community, Spots, Contact, Team Spots, Giveaway Link, Winners, Status, Due Date
-    // Based on the GET mapping: project[0], twitter[1], community[2], spots[3], contact[4], teamSpots[5], giveawayLink[6], winners[7], status[8], dueAt[9]
+    // Prepare the row data matching your sheet columns: 
+    // A: Project, B: X, C: Community, D: Spots, E: Contact, F: Team Spot, G: GA, H: Winners, I: Status, J: Deadline
     const rowData = [
       project || "",
       twitter || "",
       community || "",
       spots || "",
-      "", // contact (not in form yet)
+      contact || "",
       teamSpots || "",
       giveawayLink || "",
       winners || "",
       status || "",
       dueAt || "",
-      "", // column 11 (if exists)
-      "", // column 12 (if exists)
     ];
 
     // Append the row to the sheet
@@ -109,9 +108,9 @@ export async function POST(req: Request) {
       },
     });
 
-    return Response.json({ success: true, message: "Collab added successfully" });
+    return NextResponse.json({ success: true, message: "Collab added successfully" });
   } catch (e: any) {
     console.error("Collab POST error:", e?.message || e);
-    return Response.json({ error: "Failed to add collab: " + (e?.message || "Unknown error") }, { status: 500 });
+    return NextResponse.json({ error: "Failed to add collab: " + (e?.message || "Unknown error") }, { status: 500 });
   }
 }
