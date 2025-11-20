@@ -10,6 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Handshake,
+  Loader2,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
 import khun from "../images/khun.jpg"; // Import the khun image
@@ -88,20 +90,22 @@ export default function SideNav() {
                     <div className="mt-3 flex flex-col gap-1.5">
                       <Link
                         href="/collabs?tab=ongoing"
-                        className={`block rounded-md px-4 py-2.5 text-[15px] transition-colors
+                        className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-[15px] transition-colors
                           ${activeRoot && tabParam === "ongoing"
                             ? "border-l-2 border-blue-500 bg-blue-500/10 text-white pl-[14px]"
                             : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                       >
+                        <Loader2 size={16} className={activeRoot && tabParam === "ongoing" ? "animate-spin" : ""} />
                         Ongoing
                       </Link>
                       <Link
                         href="/collabs?tab=done"
-                        className={`block rounded-md px-4 py-2.5 text-[15px] transition-colors
+                        className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-[15px] transition-colors
                           ${activeRoot && tabParam === "done"
                             ? "border-l-2 border-blue-500 bg-blue-500/10 text-white pl-[14px]"
                             : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                       >
+                        <Check size={16} />
                         Done
                       </Link>
                     </div>
