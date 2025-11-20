@@ -11,7 +11,7 @@ import {
   ChevronRight,
   Handshake,
   Loader2,
-  Check,
+  SquareCheckBig,
 } from "lucide-react";
 import Image from "next/image";
 import khun from "../images/khun.jpg"; // Import the khun image
@@ -105,7 +105,7 @@ export default function SideNav() {
                             ? "border-l-2 border-blue-500 bg-blue-500/10 text-white pl-[14px]"
                             : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                       >
-                        <Check size={16} />
+                        <SquareCheckBig size={16} />
                         Done
                       </Link>
                     </div>
