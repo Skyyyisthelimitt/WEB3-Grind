@@ -136,3 +136,118 @@ export async function POST(req: Request) {
     }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+    const tab = url.searchParams.get("tab") || "ongoing";
+    
+    if (!id) {
+      return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const { project, twitter, community, spots, contact, teamSpots, status, dueAt, giveawayLink, winners } = body;
+
+    // Validate required fields
+    if (!project) {
+      return NextResponse.json({ error: "Project is required" }, { status: 400 });
+    }
+
+    const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8";
+    const sheetName = tab === "done" ? "COLLABS_DONE" : "COLLABS_ACTIVE";
+    
+    // ID is the index from GET (starts at 1), sheet row = id + 1 (since we skip row 1 header)
+    // GET reads from A2, so index 0 = row 2, index 1 = row 3, etc.
+    // id 1 = index 0 = row 2, id 2 = index 1 = row 3
+    const sheetRowNumber = parseInt(id, 10) + 1; // +1 because row 1 is header
+    if (isNaN(sheetRowNumber) || sheetRowNumber < 2) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
+    
+    const range = `${sheetName}!A${sheetRowNumber}:J${sheetRowNumber}`;
+
+    // Prepare the row data
+    const rowData = [
+      project || "",
+      twitter || "",
+      community || "",
+      spots || "",
+      contact || "",
+      teamSpots || "",
+      giveawayLink || "",
+      winners || "",
+      status || "",
+      dueAt || "",
+    ];
+
+    // Update the row
+    const auth = getAuth(false);
+    const sheets = google.sheets({ version: "v4", auth });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [rowData],
+      },
+    });
+
+    return NextResponse.json({ success: true, message: "Collab updated successfully" });
+  } catch (e: any) {
+    console.error("Collab PUT error:", e?.message || e);
+    return NextResponse.json({ error: "Failed to update collab: " + (e?.message || "Unknown error") }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+    const tab = url.searchParams.get("tab") || "ongoing";
+    
+    if (!id) {
+      return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
+    }
+
+    const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8";
+    const sheetName = tab === "done" ? "COLLABS_DONE" : "COLLABS_ACTIVE";
+    
+    // ID is the index from GET (starts at 1), sheet row = id + 1 (since we skip row 1 header)
+    const sheetRowNumber = parseInt(id, 10) + 1; // +1 because row 1 is header
+    if (isNaN(sheetRowNumber) || sheetRowNumber < 2) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
+
+    // Delete the row
+    const auth = getAuth(false);
+    const sheets = google.sheets({ version: "v4", auth });
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [{
+          deleteDimension: {
+            range: {
+              sheetId: await getSheetId(sheets, spreadsheetId, sheetName),
+              dimension: "ROWS",
+              startIndex: sheetRowNumber - 1, // 0-based index
+              endIndex: sheetRowNumber,
+            },
+          },
+        }],
+      },
+    });
+
+    return NextResponse.json({ success: true, message: "Collab deleted successfully" });
+  } catch (e: any) {
+    console.error("Collab DELETE error:", e?.message || e);
+    return NextResponse.json({ error: "Failed to delete collab: " + (e?.message || "Unknown error") }, { status: 500 });
+  }
+}
+
+async function getSheetId(sheets: any, spreadsheetId: string, sheetName: string): Promise<number> {
+  const res = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheet = res.data.sheets?.find((s: any) => s.properties.title === sheetName);
+  return sheet?.properties.sheetId || 0;
+}

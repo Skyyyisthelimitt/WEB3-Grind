@@ -18,6 +18,7 @@ export default function CollabsPage() {
   const [q, setQ] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const searchParams = useSearchParams();
   const tab = searchParams?.get("tab") || "ongoing";
 
@@ -34,6 +35,31 @@ export default function CollabsPage() {
     giveawayLink: "",
     winners: "",
   });
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`/api/collabs?id=${id}&tab=${tab}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to delete collab");
+        return;
+      }
+      // Refresh the collabs list
+      setLoading(true);
+      const refreshRes = await fetch(`/api/collabs?tab=${tab}`, { cache: "no-store" });
+      const refreshJson = await refreshRes.json();
+      const filteredCollabs = (refreshJson.collabs || []).filter((collab: any) => 
+        collab.project || collab.twitter || collab.community || collab.spots
+      );
+      setCollabs(filteredCollabs);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error deleting collab:", error);
+      alert("Failed to delete collab. Please try again.");
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -83,6 +109,7 @@ export default function CollabsPage() {
           <button
             onClick={() => {
               setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+              setEditingId(null);
               setIsModalOpen(true);
             }}
             className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
@@ -105,12 +132,13 @@ export default function CollabsPage() {
                 <th className="px-4 py-2 text-left">Due Date</th>
                 <th className="px-4 py-2 text-left">GA</th>
                 <th className="px-4 py-2 text-left">Winners</th>
+                <th className="px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-2 text-center">
+                  <td colSpan={10} className="px-4 py-2 text-center">
                     Loading...
                   </td>
                 </tr>
@@ -158,11 +186,46 @@ export default function CollabsPage() {
                         </a>
                       ) : "-"}
                     </td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setFormData({
+                              project: c.project || "",
+                              twitter: c.twitter || "",
+                              community: c.community || "",
+                              spots: c.spots || "",
+                              contact: c.contact || "",
+                              teamSpots: c.teamSpots || "",
+                              status: c.status || "",
+                              dueAt: c.dueAt || "",
+                              giveawayLink: c.giveawayLink || "",
+                              winners: c.winners || "",
+                            });
+                            setEditingId(c.id);
+                            setIsModalOpen(true);
+                          }}
+                          className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete "${c.project}"?`)) {
+                              handleDelete(c.id);
+                            }
+                          }}
+                          className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-4 py-2 text-center text-gray-500">
+                  <td colSpan={10} className="px-4 py-2 text-center text-gray-500">
                     {q.trim() ? "No collabs match your search" : `No ${tab} collabs found`}
                   </td>
                 </tr>
@@ -177,17 +240,19 @@ export default function CollabsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => {
           setIsModalOpen(false);
           setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+          setEditingId(null);
         }}>
           <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-zinc-100">Add Collab</h2>
-                <p className="text-sm text-zinc-400 mt-1">Add a new collab entry to your {tab} sheet</p>
+                <h2 className="text-xl font-semibold text-zinc-100">{editingId ? "Edit Collab" : "Add Collab"}</h2>
+                <p className="text-sm text-zinc-400 mt-1">{editingId ? "Update collab entry" : `Add a new collab entry to your ${tab} sheet`}</p>
               </div>
               <button
                 onClick={() => {
                   setIsModalOpen(false);
                   setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                  setEditingId(null);
                 }}
                 className="text-zinc-400 hover:text-zinc-100 text-2xl leading-none"
               >
@@ -201,8 +266,10 @@ export default function CollabsPage() {
               try {
                 const payload = { ...formData, tab };
                 console.log("Submitting collab:", payload);
-                const res = await fetch("/api/collabs", {
-                  method: "POST",
+                const url = editingId ? `/api/collabs?id=${editingId}&tab=${tab}` : "/api/collabs";
+                const method = editingId ? "PUT" : "POST";
+                const res = await fetch(url, {
+                  method,
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(payload),
                   cache: "no-store",
@@ -211,7 +278,7 @@ export default function CollabsPage() {
                 console.log("Response status:", res.status);
                 console.log("Response data:", JSON.stringify(data, null, 2));
                 if (!res.ok) {
-                  const errorMsg = data.error || data.message || "Failed to add collab";
+                  const errorMsg = data.error || data.message || `Failed to ${editingId ? "update" : "add"} collab`;
                   console.error("API Error:", errorMsg);
                   alert(`Error: ${errorMsg}`);
                   setIsSubmitting(false);
@@ -219,6 +286,7 @@ export default function CollabsPage() {
                 }
                 // Reset form and close modal
                 setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                setEditingId(null);
                 setIsModalOpen(false);
                 setIsSubmitting(false);
                 // Refresh the collabs list
@@ -232,7 +300,7 @@ export default function CollabsPage() {
                 setLoading(false);
               } catch (error) {
                 console.error("Error submitting form:", error);
-                alert("Failed to add collab. Please try again.");
+                alert(`Failed to ${editingId ? "update" : "add"} collab. Please try again.`);
                 setIsSubmitting(false);
                 setLoading(false);
               }
@@ -373,6 +441,7 @@ export default function CollabsPage() {
                   onClick={() => {
                     setIsModalOpen(false);
                     setFormData({ project: "", twitter: "", community: "", spots: "", contact: "", teamSpots: "", status: "", dueAt: "", giveawayLink: "", winners: "" });
+                    setEditingId(null);
                   }}
                   className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-800/50 text-zinc-300 border border-zinc-700 hover:bg-zinc-800 transition"
                 >
@@ -383,7 +452,7 @@ export default function CollabsPage() {
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? "Adding..." : "Add Collab"}
+                  {isSubmitting ? (editingId ? "Updating..." : "Adding...") : (editingId ? "Update Collab" : "Add Collab")}
                 </button>
               </div>
             </form>
