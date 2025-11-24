@@ -6,8 +6,16 @@ import Image from "next/image";
 import login1 from "../images/login1.jpg";
 import login2 from "../images/login2.jpg";
 import login3 from "../images/login3.jpg";
+import login4 from "../images/login4.jpg";
+import login5 from "../images/login5.jpg";
 
-const loginImages = [login1, login2, login3];
+const loginImages = [
+  login1,
+  login2,
+  login3,
+  login4,
+  login5,
+];
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -61,44 +69,45 @@ export default function LoginPage() {
       <div className="w-full max-w-6xl rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50">
         <div className="flex min-h-[600px]">
           {/* Left Section - Login Form */}
-          <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-gradient-to-br from-zinc-900/90 to-zinc-950/90">
-            <div className="w-full max-w-md">
-              {/* Logo */}
-              <div className="mb-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-blue-600/20 border-2 border-blue-500/50 flex items-center justify-center">
-                    <div className="w-6 h-6 rounded-full bg-blue-500/60"></div>
-                  </div>
-                  <span className="text-2xl font-bold text-zinc-100">Web3 Manager</span>
+          <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
+            <div className="w-full max-w-sm">
+              {/* Icon */}
+              <div className="flex justify-center mb-8">
+                <div className="w-12 h-12 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                  </svg>
                 </div>
               </div>
 
               {/* Welcome Message */}
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold text-zinc-100 mb-2">Welcome Back!</h1>
-                <p className="text-zinc-400 text-base">Please enter login details below</p>
+              <div className="text-center mb-10">
+                <h1 className="text-3xl font-bold text-zinc-800 mb-2">Welcome back!</h1>
+                <p className="text-zinc-500 text-base">Please enter your details</p>
               </div>
 
               {/* Login Form */}
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-8">
                 <div>
-                  <label htmlFor="username" className="block text-sm font-medium text-zinc-300 mb-2">
+                  <label htmlFor="username" className="block text-sm font-medium text-zinc-700 mb-2">
                     Username
                   </label>
-                  <input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full rounded-xl bg-white border border-zinc-200 px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                    placeholder="Enter your username"
-                    required
-                    autoFocus
-                  />
+                  <div className="relative">
+                    <input
+                      id="username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full bg-transparent border-0 border-b-2 border-zinc-300 px-0 py-2 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-700 transition-colors"
+                      placeholder=""
+                      required
+                      autoFocus
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-2">
                     Password
                   </label>
                   <div className="relative">
@@ -107,13 +116,13 @@ export default function LoginPage() {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl bg-white border border-zinc-200 px-4 py-3 pr-12 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                      placeholder="Enter your password"
+                      className="w-full bg-transparent border-0 border-b-2 border-zinc-300 px-0 py-2 pr-10 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-700 transition-colors"
+                      placeholder=""
                       required
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700"
                       onClick={() => {
                         const input = document.getElementById("password") as HTMLInputElement;
                         if (input) {
@@ -122,15 +131,31 @@ export default function LoginPage() {
                       }}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                       </svg>
                     </button>
                   </div>
                 </div>
 
+                {/* Remember & Forgot Password */}
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 text-zinc-700 border-zinc-300 rounded focus:ring-zinc-500"
+                    />
+                    <span className="text-sm text-zinc-700">Remember for 30 days</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="text-sm text-zinc-500 hover:text-zinc-700"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
                 {error && (
-                  <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
                     {error}
                   </div>
                 )}
@@ -138,9 +163,9 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full px-4 py-3 rounded-xl text-base font-semibold bg-zinc-900 text-white hover:bg-zinc-800 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  className="w-full px-4 py-3 rounded-lg text-base font-semibold bg-zinc-800 text-white hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Signing in..." : "Sign in"}
+                  {loading ? "Logging in..." : "Log In"}
                 </button>
               </form>
             </div>

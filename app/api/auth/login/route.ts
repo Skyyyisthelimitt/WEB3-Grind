@@ -31,13 +31,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // For now, username is optional but can be validated if ADMIN_USERNAME is set
+    // Validate username if ADMIN_USERNAME is set
     const adminUsername = process.env.ADMIN_USERNAME;
-    if (adminUsername && username !== adminUsername) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
+    if (adminUsername) {
+      if (!username) {
+        return NextResponse.json(
+          { error: "Username is required" },
+          { status: 400 }
+        );
+      }
+      if (username !== adminUsername) {
+        return NextResponse.json(
+          { error: "Invalid credentials" },
+          { status: 401 }
+        );
+      }
     }
 
     if (verifyPassword(password)) {
