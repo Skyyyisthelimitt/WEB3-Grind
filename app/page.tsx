@@ -306,18 +306,6 @@ useEffect(() => {
     return `${displayHours}:${String(phMins).padStart(2, "0")} ${period}`;
   };
 
-  const recent = useMemo(
-    () =>
-      wls
-        .map((w) => ({
-          when: w.createdAt || "",
-          text: `Added whitelist for ${w.project}`,
-        }))
-        .filter((e) => e.when)
-        .sort((a, b) => (a.when > b.when ? -1 : 1))
-        .slice(0, 3),
-    [wls]
-  );
 
   // Upcoming schedules with converted PH time
   const upcomingSchedules = useMemo(() => {
@@ -464,56 +452,32 @@ useEffect(() => {
             </ResponsiveContainer>
           </Card>
 
-          <Card title="Recent Activity" className="h-[420px]">
-            <div className="flex flex-col h-full">
-              <div className="mb-3">
-                <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Upcoming Schedule</h4>
-                <ul className="space-y-1.5">
-                  {upcomingSchedules.length > 0 ? (
-                    upcomingSchedules.map((s) => (
-                      <li
-                        key={s.id}
-                        className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm text-zinc-200 font-medium truncate">{s.project}</div>
-                          <div className="text-xs text-zinc-400 mt-0.5">{s.phase}</div>
-                        </div>
-                        <div className="text-right ml-2">
-                          {s.phTime && (
-                            <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
-                          )}
-                          <div className="text-xs text-zinc-500">{s.mintDate}</div>
-                        </div>
-                      </li>
-                    ))
-                  ) : (
-                    <div className="text-zinc-500 text-xs py-2">
-                      {loadingWL ? "Loading…" : "No upcoming schedules."}
+          <Card title="Upcoming Mints" className="h-[420px]">
+            <ul className="space-y-1.5">
+              {upcomingSchedules.length > 0 ? (
+                upcomingSchedules.map((s) => (
+                  <li
+                    key={s.id}
+                    className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-zinc-200 font-medium truncate">{s.project}</div>
+                      <div className="text-xs text-zinc-400 mt-0.5">{s.phase}</div>
                     </div>
-                  )}
-                </ul>
-              </div>
-              <div className="mt-3 pt-3 border-t border-zinc-800">
-                <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Recent Activity</h4>
-                <ul className="space-y-2">
-                  {recent.map((e, i) => (
-                    <li
-                      key={i}
-                      className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
-                    >
-                      <span className="text-sm text-zinc-300">{e.text}</span>
-                      <span className="text-xs text-zinc-500">{e.when}</span>
-                    </li>
-                  ))}
-                  {!recent.length && (
-                    <div className="text-zinc-500 text-xs">
-                      {loadingWL ? "Loading…" : "No recent activity."}
+                    <div className="text-right ml-2">
+                      {s.phTime && (
+                        <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
+                      )}
+                      <div className="text-xs text-zinc-500">{s.mintDate}</div>
                     </div>
-                  )}
-                </ul>
-              </div>
-            </div>
+                  </li>
+                ))
+              ) : (
+                <div className="text-zinc-500 text-xs py-2">
+                  {loadingWL ? "Loading…" : "No upcoming mints."}
+                </div>
+              )}
+            </ul>
           </Card>
 
           <Card title="Collabs — Action Required" className="h-[420px]" badgeCount={needsAction.length}>
