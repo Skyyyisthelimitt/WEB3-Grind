@@ -452,34 +452,6 @@ useEffect(() => {
             </ResponsiveContainer>
           </Card>
 
-          <Card title="Upcoming Mints" className="h-[420px]">
-            <ul className="space-y-1.5">
-              {upcomingSchedules.length > 0 ? (
-                upcomingSchedules.map((s) => (
-                  <li
-                    key={s.id}
-                    className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-zinc-200 font-medium truncate">{s.project}</div>
-                      <div className="text-xs text-zinc-400 mt-0.5">{s.phase}</div>
-                    </div>
-                    <div className="text-right ml-2">
-                      {s.phTime && (
-                        <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
-                      )}
-                      <div className="text-xs text-zinc-500">{s.mintDate}</div>
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <div className="text-zinc-500 text-xs py-2">
-                  {loadingWL ? "Loading…" : "No upcoming mints."}
-                </div>
-              )}
-            </ul>
-          </Card>
-
           <Card title="Collabs — Action Required" className="h-[420px]" badgeCount={needsAction.length}>
             <div className="flex flex-col h-full">
               <ul className={`space-y-2 flex-1 ${showCollabPagination ? "overflow-y-auto pr-1" : ""}`}>
@@ -531,6 +503,34 @@ useEffect(() => {
                 )}
               </div>
             </div>
+          </Card>
+
+          <Card title="Upcoming Mints" className="h-[420px]">
+            <ul className="space-y-1.5">
+              {upcomingSchedules.length > 0 ? (
+                upcomingSchedules.map((s) => (
+                  <li
+                    key={s.id}
+                    className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-zinc-200 font-medium truncate">{s.project}</div>
+                      <div className="text-xs text-zinc-400 mt-0.5">{s.phase}</div>
+                    </div>
+                    <div className="text-right ml-2">
+                      {s.phTime && (
+                        <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
+                      )}
+                      <div className="text-xs text-zinc-500">{s.mintDate}</div>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <div className="text-zinc-500 text-xs py-2">
+                  {loadingWL ? "Loading…" : "No upcoming mints."}
+                </div>
+              )}
+            </ul>
           </Card>
 
           {/* Crypto cards (dynamic) */}
