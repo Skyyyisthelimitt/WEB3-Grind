@@ -64,9 +64,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-zinc-950 via-black to-zinc-950">
+    <div className="login-grid-bg min-h-screen flex items-center justify-center p-4">
       {/* Main Login Container */}
-      <div className="w-full max-w-6xl rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50">
+      <div className="relative z-[1] w-full max-w-6xl rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50">
         <div className="flex min-h-[600px]">
           {/* Left Section - Login Form */}
           <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
