@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard,
@@ -12,6 +12,7 @@ import {
   Handshake,
   Loader2,
   Check,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import khun from "../images/khun.jpg"; // Import the khun image
@@ -19,9 +20,23 @@ import khun from "../images/khun.jpg"; // Import the khun image
 export default function SideNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const tabParam = searchParams?.get("tab") || "ongoing";
   const [collapsed, setCollapsed] = useState(false);
   const [collabsOpen, setCollabsOpen] = useState(pathname?.startsWith("/collabs") ?? false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout error:", error);
+      setLoggingOut(false);
+    }
+  };
 
   const links = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -134,8 +149,21 @@ export default function SideNav() {
       </nav>
 
       {/* Footer - adjusted padding */}
-      <div className="px-4 py-4 border-t border-zinc-900/60 text-sm text-zinc-500">
-        {!collapsed ? "v1.0.0" : <div className="text-center">v1.0</div>}
+      <div className="px-4 py-4 border-t border-zinc-900/60">
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className={`w-full flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors text-base
+            ${collapsed ? "justify-center" : ""}
+            text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200 disabled:opacity-50`}
+          title="Logout"
+        >
+          <LogOut size={20} />
+          {!collapsed && <span>{loggingOut ? "Logging out..." : "Logout"}</span>}
+        </button>
+        <div className={`text-sm text-zinc-500 mt-2 ${collapsed ? "text-center" : ""}`}>
+          {!collapsed ? "v1.0.0" : <div className="text-center">v1.0</div>}
+        </div>
       </div>
     </aside>
   );
