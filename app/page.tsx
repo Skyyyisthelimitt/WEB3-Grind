@@ -9,7 +9,6 @@ import {
   Pie,
   Cell,
   Tooltip,
-  Legend,
   AreaChart,
   Area,
 } from "recharts";
@@ -50,6 +49,13 @@ type WL = {
   status?: "Not Minted" | "Minted";
   mintTime?: string;
   mintTimezone?: string;
+};
+
+type ChainPieDatum = {
+  name: Chain;
+  value: number;
+  projects: { label: string; count: number }[];
+  percentage: number;
 };
 
 type CollabStatus = "Not Posted" | "Posted" | "Submitted" | "Cancel";
@@ -136,6 +142,7 @@ export default function DashboardPage() {
   // live coins
   const [coins, setCoins] = useState<Coin[]>(initialCoins);
   const [loadingCoins, setLoadingCoins] = useState(true);
+const [hoveredChain, setHoveredChain] = useState<Chain | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -256,14 +263,49 @@ useEffect(() => {
     ).length;
   }, [wls]);
 
-  const pie = useMemo(() => {
-    const counts = CHAIN_ORDER.reduce<Record<Chain, number>>((acc, c) => {
-      acc[c] = 0;
+  const pieData = useMemo<ChainPieDatum[]>(() => {
+    const buckets = CHAIN_ORDER.reduce<
+      Record<
+        Chain,
+        {
+          count: number;
+          projectMap: Map<string, { label: string; count: number }>;
+        }
+      >
+    >((acc, chain) => {
+      acc[chain] = { count: 0, projectMap: new Map() };
       return acc;
-    }, {} as Record<Chain, number>);
-    for (const w of wls) counts[w.chain] = (counts[w.chain] || 0) + 1;
-    return CHAIN_ORDER.map((name) => ({ name, value: counts[name] }));
+    }, {} as Record<
+      Chain,
+      { count: number; projectMap: Map<string, { label: string; count: number }> }
+    >);
+
+    for (const wl of wls) {
+      const bucket = buckets[wl.chain];
+      bucket.count += 1;
+      const label = `${wl.project}${wl.type ? ` (${wl.type})` : ""}`;
+      const current = bucket.projectMap.get(label) ?? { label, count: 0 };
+      current.count += 1;
+      bucket.projectMap.set(label, current);
+    }
+
+    const total = wls.length || 0;
+
+    return CHAIN_ORDER.map((chain) => {
+      const bucket = buckets[chain];
+      const projects = Array.from(bucket.projectMap.values()).sort(
+        (a, b) => b.count - a.count
+      );
+      return {
+        name: chain,
+        value: bucket.count,
+        projects,
+        percentage: total ? (bucket.count / total) * 100 : 0,
+      };
+    });
   }, [wls]);
+  const pieSlices = pieData.filter((slice) => slice.value > 0);
+  const pieChartData = pieSlices.length ? pieSlices : pieData;
 
   // Convert date and time from any timezone to PH time (UTC+8)
   // Returns { date: string, time: string } with proper date adjustment
@@ -497,39 +539,72 @@ useEffect(() => {
           />
 
           <Card title="WL Summary" className="h-[420px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pie} dataKey="value" nameKey="name" outerRadius={116}>
-                  {pie.map((d, i) => (
-                    <Cell key={i} fill={CHAIN_COLORS[d.name as Chain]} />
+            <div className="flex h-full flex-col">
+              <div className="relative flex-1">
+                <div className="pointer-events-none absolute inset-x-6 inset-y-4 rounded-[32px] bg-gradient-to-b from-indigo-500/10 via-blue-500/5 to-transparent blur-3xl" />
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={70}
+                      outerRadius={120}
+                      paddingAngle={4}
+                      cornerRadius={12}
+                      stroke="#030712"
+                      strokeWidth={2}
+                      onMouseEnter={(_, index) =>
+                        setHoveredChain(pieChartData[index]?.name ?? null)
+                      }
+                      onMouseLeave={() => setHoveredChain(null)}
+                    >
+                      {pieChartData.map((slice) => (
+                        <Cell
+                          key={slice.name}
+                          fill={CHAIN_COLORS[slice.name]}
+                          opacity={
+                            hoveredChain && hoveredChain !== slice.name ? 0.45 : 1
+                          }
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      cursor={{ fill: "transparent" }}
+                      content={<ChainTooltip />}
+                      wrapperStyle={{ outline: "none" }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-[11px] uppercase tracking-[0.35em] text-zinc-500">
+                    WL Total
+                  </span>
+                  <span className="mt-1 text-3xl font-semibold text-white">
+                    {wls.length || 0}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 px-4 py-3">
+                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-zinc-400">
+                  {CHAIN_ORDER.map((chain) => (
+                    <div key={chain} className="flex items-center gap-1.5">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: CHAIN_COLORS[chain] }}
+                      />
+                      <span className="font-medium text-white">{chain}</span>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend 
-                  content={({ payload }) => {
-                    if (!payload || !payload.length) return null;
-                    // Use the pie data order instead of payload order
-                    const orderedPayload = pie.map(pieItem => 
-                      payload.find(p => p.value === pieItem.name)
-                    ).filter(Boolean);
-                    
-                    return (
-                      <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
-                        {orderedPayload.map((entry: any, index: number) => (
-                          <div key={index} className="flex items-center gap-1.5">
-                            <div 
-                              className="w-3 h-3 rounded-sm" 
-                              style={{ backgroundColor: entry.color }}
-                            />
-                            <span className="text-xs text-zinc-400">{entry.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+                </div>
+                {!pieSlices.length && (
+                  <p className="mt-3 text-center text-[11px] text-zinc-500">
+                    Add a whitelist entry to start populating the donut.
+                  </p>
+                )}
+              </div>
+            </div>
           </Card>
 
           <Card title="Collabs — Action Required" className="h-[420px]" badgeCount={needsAction.length}>
@@ -657,6 +732,57 @@ useEffect(() => {
           </Card>
           <MiniCalendar wls={filteredWL} />
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------- Chart Helpers ----------------------- */
+
+function ChainTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload?: ChainPieDatum; color?: string }[];
+}) {
+  if (!active || !payload?.length) return null;
+  const datum = payload[0]?.payload as ChainPieDatum | undefined;
+  const color = payload[0]?.color ?? "#a855f7";
+  if (!datum) return null;
+
+  const visibleProjects = datum.projects.slice(0, 6);
+  const hiddenCount = Math.max(datum.projects.length - visibleProjects.length, 0);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-zinc-950/90 px-4 py-3 text-sm text-zinc-200 shadow-2xl backdrop-blur max-w-[18rem]">
+      <div className="flex items-center gap-2 font-semibold text-white">
+        <span
+          className="h-2.5 w-2.5 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+        {datum.name}
+      </div>
+      <div className="mt-1 text-2xl font-semibold text-white">{datum.value} WL</div>
+      <div className="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs">
+        {visibleProjects.length ? (
+          visibleProjects.map((project) => (
+            <div
+              key={project.label}
+              className="flex items-center justify-between gap-3 text-zinc-200"
+            >
+              <span className="truncate">{project.label}</span>
+              <span className="font-semibold text-white">{project.count}</span>
+            </div>
+          ))
+        ) : (
+          <div className="text-zinc-400">No whitelists yet.</div>
+        )}
+        {hiddenCount > 0 && (
+          <div className="text-[11px] text-zinc-500">
+            +{hiddenCount} more project{hiddenCount > 1 ? "s" : ""}
+          </div>
+        )}
       </div>
     </div>
   );
