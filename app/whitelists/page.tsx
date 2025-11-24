@@ -15,6 +15,8 @@ type WL = {
   wallets?: string;
   mintDate?: string;
   price?: string;
+  mintTime?: string;
+  mintTimezone?: string;
 };
 
 export default function WhitelistsPage() {
@@ -34,6 +36,8 @@ export default function WhitelistsPage() {
     wallet: "",
     mintDate: "",
     mintPrice: "",
+    mintTime: "",
+    mintTimezone: "UTC",
   });
 
   const handleDelete = async (id: number) => {
@@ -97,7 +101,7 @@ export default function WhitelistsPage() {
           </div>
           <button
             onClick={() => {
-              setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+              setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "", mintTime: "", mintTimezone: "UTC" });
               setEditingId(null);
               setIsModalOpen(true);
             }}
@@ -154,6 +158,8 @@ export default function WhitelistsPage() {
                           wallet: r.wallets || "",
                           mintDate: r.mintDate || "",
                           mintPrice: r.price || "",
+                          mintTime: r.mintTime || "",
+                          mintTimezone: r.mintTimezone || "UTC",
                         });
                         setEditingId(r.id);
                         setIsModalOpen(true);
@@ -184,7 +190,7 @@ export default function WhitelistsPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => {
           setIsModalOpen(false);
-          setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+          setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "", mintTime: "", mintTimezone: "UTC" });
           setEditingId(null);
         }}>
           <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -196,7 +202,7 @@ export default function WhitelistsPage() {
               <button
                 onClick={() => {
                   setIsModalOpen(false);
-                  setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+                  setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "", mintTime: "", mintTimezone: "UTC" });
                   setEditingId(null);
                 }}
                 className="text-zinc-400 hover:text-zinc-100 text-2xl leading-none"
@@ -223,7 +229,7 @@ export default function WhitelistsPage() {
                   return;
                 }
                 // Reset form and close modal
-                setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+                setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "", mintTime: "", mintTimezone: "UTC" });
                 setEditingId(null);
                 setIsModalOpen(false);
                 setIsSubmitting(false);
@@ -340,13 +346,43 @@ export default function WhitelistsPage() {
                 />
               </div>
 
+              {/* Mint Time */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Mint Time</label>
+                <input
+                  type="time"
+                  value={formData.mintTime}
+                  onChange={(e) => setFormData({ ...formData, mintTime: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                />
+              </div>
+
+              {/* Mint Timezone */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Timezone</label>
+                <select
+                  value={formData.mintTimezone}
+                  onChange={(e) => setFormData({ ...formData, mintTimezone: e.target.value })}
+                  className="w-full rounded-xl bg-zinc-900/70 border border-zinc-800 px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/20"
+                >
+                  <option value="UTC">UTC</option>
+                  <option value="EST">EST (UTC-5)</option>
+                  <option value="PST">PST (UTC-8)</option>
+                  <option value="CST">CST (UTC-6)</option>
+                  <option value="GMT">GMT (UTC+0)</option>
+                  <option value="JST">JST (UTC+9)</option>
+                  <option value="SGT">SGT (UTC+8)</option>
+                  <option value="PH">PH (UTC+8)</option>
+                </select>
+              </div>
+
               {/* Actions */}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
-                    setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "" });
+                    setFormData({ project: "", x: "", type: "" as WLType | "", chain: "" as Chain | "", wallet: "", mintDate: "", mintPrice: "", mintTime: "", mintTimezone: "UTC" });
                     setEditingId(null);
                   }}
                   className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-800/50 text-zinc-300 border border-zinc-700 hover:bg-zinc-800 transition"

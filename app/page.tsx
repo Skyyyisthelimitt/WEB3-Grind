@@ -48,6 +48,8 @@ type WL = {
   priority?: Priority;
   createdAt?: string;
   status?: "Not Minted" | "Minted";
+  mintTime?: string;
+  mintTimezone?: string;
 };
 
 type CollabStatus = "Not Posted" | "Posted" | "Submitted" | "Cancel";
@@ -263,6 +265,47 @@ useEffect(() => {
     return CHAIN_ORDER.map((name) => ({ name, value: counts[name] }));
   }, [wls]);
 
+  // Convert time from any timezone to PH time (UTC+8)
+  const convertToPHTime = (time: string, timezone: string): string => {
+    if (!time || !timezone) return "";
+    
+    // Timezone offsets in hours from UTC
+    const timezoneOffsets: Record<string, number> = {
+      UTC: 0,
+      GMT: 0,
+      EST: -5,
+      PST: -8,
+      CST: -6,
+      JST: 9,
+      SGT: 8,
+      PH: 8,
+    };
+    
+    const sourceOffset = timezoneOffsets[timezone] ?? 0;
+    const phOffset = 8; // PH is UTC+8
+    
+    // Parse time (HH:MM format)
+    const [hours, minutes] = time.split(":").map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return "";
+    
+    // Convert to UTC first, then to PH time
+    const totalMinutes = hours * 60 + minutes;
+    const utcMinutes = totalMinutes - (sourceOffset * 60);
+    const phMinutes = utcMinutes + (phOffset * 60);
+    
+    // Normalize to 0-1439 minutes (24 hours)
+    let normalizedMinutes = phMinutes % 1440;
+    if (normalizedMinutes < 0) normalizedMinutes += 1440;
+    
+    const phHours = Math.floor(normalizedMinutes / 60);
+    const phMins = normalizedMinutes % 60;
+    
+    // Format as 12-hour time with AM/PM
+    const period = phHours >= 12 ? "PM" : "AM";
+    const displayHours = phHours % 12 || 12;
+    return `${displayHours}:${String(phMins).padStart(2, "0")} ${period}`;
+  };
+
   const recent = useMemo(
     () =>
       wls
@@ -275,6 +318,35 @@ useEffect(() => {
         .slice(0, 3),
     [wls]
   );
+
+  // Upcoming schedules with converted PH time
+  const upcomingSchedules = useMemo(() => {
+    const now = new Date();
+    return wls
+      .filter((w) => {
+        if (!w.mintDate || w.status === "Minted") return false;
+        const mintDate = new Date(w.mintDate);
+        return mintDate >= now;
+      })
+      .map((w) => {
+        const phTime = w.mintTime && w.mintTimezone 
+          ? convertToPHTime(w.mintTime, w.mintTimezone)
+          : "";
+        return {
+          id: w.id,
+          project: w.project,
+          phase: w.type,
+          mintDate: w.mintDate,
+          phTime,
+        };
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.mintDate || "");
+        const dateB = new Date(b.mintDate || "");
+        return dateA.getTime() - dateB.getTime();
+      })
+      .slice(0, 5); // Show top 5 upcoming
+  }, [wls]);
 
   const needsAction = useMemo(() => {
     const normalize = (s: string = "") => s.toLowerCase().replace(/\s+/g, "").trim();
@@ -393,22 +465,55 @@ useEffect(() => {
           </Card>
 
           <Card title="Recent Activity" className="h-[420px]">
-            <ul className="space-y-2">
-              {recent.map((e, i) => (
-                <li
-                  key={i}
-                  className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
-                >
-                  <span>{e.text}</span>
-                  <span className="text-xs text-zinc-500">{e.when}</span>
-                </li>
-              ))}
-              {!recent.length && (
-                <div className="text-zinc-500">
-                  {loadingWL ? "Loading…" : "No recent activity."}
-                </div>
-              )}
-            </ul>
+            <div className="flex flex-col h-full">
+              <div className="mb-3">
+                <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Upcoming Schedule</h4>
+                <ul className="space-y-1.5">
+                  {upcomingSchedules.length > 0 ? (
+                    upcomingSchedules.map((s) => (
+                      <li
+                        key={s.id}
+                        className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-zinc-200 font-medium truncate">{s.project}</div>
+                          <div className="text-xs text-zinc-400 mt-0.5">{s.phase}</div>
+                        </div>
+                        <div className="text-right ml-2">
+                          {s.phTime && (
+                            <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
+                          )}
+                          <div className="text-xs text-zinc-500">{s.mintDate}</div>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <div className="text-zinc-500 text-xs py-2">
+                      {loadingWL ? "Loading…" : "No upcoming schedules."}
+                    </div>
+                  )}
+                </ul>
+              </div>
+              <div className="mt-3 pt-3 border-t border-zinc-800">
+                <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Recent Activity</h4>
+                <ul className="space-y-2">
+                  {recent.map((e, i) => (
+                    <li
+                      key={i}
+                      className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
+                    >
+                      <span className="text-sm text-zinc-300">{e.text}</span>
+                      <span className="text-xs text-zinc-500">{e.when}</span>
+                    </li>
+                  ))}
+                  {!recent.length && (
+                    <div className="text-zinc-500 text-xs">
+                      {loadingWL ? "Loading…" : "No recent activity."}
+                    </div>
+                  )}
+                </ul>
+              </div>
+            </div>
           </Card>
 
           <Card title="Collabs — Action Required" className="h-[420px]" badgeCount={needsAction.length}>
@@ -714,16 +819,6 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
         })}
       </div>
 
-      <div className="mt-2 text-xs text-zinc-400">Upcoming schedule</div>
-      <ul className="mt-1 space-y-1">
-        {upcoming.map((w) => (
-          <li key={w.id} className="flex items-center justify-between bg-zinc-900/60 border border-zinc-800 rounded-md px-2 py-1">
-            <span className="text-zinc-200 text-sm">{w.project}</span>
-            <span className="text-[11px] text-zinc-500">{w.mintDate}</span>
-          </li>
-        ))}
-        {!upcoming.length && <div className="text-zinc-500 text-xs">No upcoming mints.</div>}
-      </ul>
     </div>
   );
 }

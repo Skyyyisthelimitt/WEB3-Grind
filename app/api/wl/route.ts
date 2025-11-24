@@ -14,6 +14,8 @@ type WL = {
   wallets?: string;
   mintDate?: string;
   price?: string; // Changed to string to preserve symbols
+  mintTime?: string;
+  mintTimezone?: string;
   priority?: Priority;
   status?: "Not Minted" | "Minted";
 };
@@ -99,6 +101,8 @@ function mapRows(values: string[][]): WL[] {
     const wallets = pick(row, map, ["Wallet","Wallets"]).trim() || undefined;
     const mintDate = toISO(pick(row, map, ["Mint Date","MintDate"]));
     const priceRaw = pick(row, map, ["Mint Price","Price","MintPrice"]).trim(); // pass as string!
+    const mintTime = pick(row, map, ["Mint Time","MintTime","Time"]).trim() || undefined;
+    const mintTimezone = pick(row, map, ["Timezone","Time Zone","MintTimezone"]).trim() || undefined;
 
     return {
       id: i + 2, // i+2 because: i is 0-based in slice(1), so first data row (sheet row 2) gets id=2
@@ -109,6 +113,8 @@ function mapRows(values: string[][]): WL[] {
       wallets,
       mintDate,
       price: priceRaw || undefined, // string not number!
+      mintTime,
+      mintTimezone,
       priority: "Potential",
       status: "Not Minted",
     };
@@ -133,7 +139,7 @@ export async function GET() {
   try {
     // Fetch the WHITELIST sheet from your Google Spreadsheet via Google Sheets API
     const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8"; // same as collabs API
-    const range = "WHITELIST!A1:G"; // Update range as desired, covers all columns
+    const range = "WHITELIST!A1:I"; // Updated to include H (mintTime) and I (mintTimezone)
 
     const auth = getAuth(true);
     const sheets = google.sheets({ version: "v4", auth });
@@ -153,7 +159,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { project, x, type, chain, wallet, mintDate, mintPrice } = body;
+    const { project, x, type, chain, wallet, mintDate, mintPrice, mintTime, mintTimezone } = body;
 
     // Validate required fields
     if (!project || !type || !chain || !wallet) {
@@ -161,12 +167,12 @@ export async function POST(req: Request) {
     }
 
     const spreadsheetId = "1AMOVd-VwMJAN4Ac_-cdmo5sCKnkgGz18ebe1AT5w8D8";
-    const range = "WHITELIST!A:G"; // Append to the end of the sheet
+    const range = "WHITELIST!A:I"; // Updated to include H (mintTime) and I (mintTimezone)
 
     const auth = getAuth(false); // Need write permissions
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Prepare the row data matching your sheet columns: ProjectName, X, Type, Chain, Wallet, Mint Date, Mint Price
+    // Prepare the row data matching your sheet columns: ProjectName, X, Type, Chain, Wallet, Mint Date, Mint Price, Mint Time, Timezone
     const rowData = [
       project || "",
       x || "",
@@ -175,6 +181,8 @@ export async function POST(req: Request) {
       wallet || "",
       mintDate || "",
       mintPrice || "",
+      mintTime || "",
+      mintTimezone || "",
     ];
 
     // Append the row to the sheet
@@ -204,7 +212,7 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { project, x, type, chain, wallet, mintDate, mintPrice } = body;
+    const { project, x, type, chain, wallet, mintDate, mintPrice, mintTime, mintTimezone } = body;
 
     // Validate required fields
     if (!project || !type || !chain || !wallet) {
@@ -220,7 +228,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
     
-    const range = `${sheetName}!A${sheetRowNumber}:G${sheetRowNumber}`;
+    const range = `${sheetName}!A${sheetRowNumber}:I${sheetRowNumber}`;
 
     // Prepare the row data
     const rowData = [
@@ -231,6 +239,8 @@ export async function PUT(req: Request) {
       wallet || "",
       mintDate || "",
       mintPrice || "",
+      mintTime || "",
+      mintTimezone || "",
     ];
 
     // Update the row
