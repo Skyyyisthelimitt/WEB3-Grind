@@ -368,11 +368,30 @@ useEffect(() => {
   }, [wls, q]);
 
   const [dailyQuote, setDailyQuote] = useState<{ text: string; author?: string } | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(true);
+  
   useEffect(() => {
-    fetch('/api/daily-quote', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((q) => setDailyQuote(q))
-      .catch(() => setDailyQuote({ text: "Ship, learn, iterate.", author: "" }));
+    let alive = true;
+    const fetchQuote = async () => {
+      try {
+        const res = await fetch('/api/daily-quote', { cache: 'no-store' });
+        if (!alive) return;
+        if (res.ok) {
+          const data = await res.json();
+          setDailyQuote(data);
+        } else {
+          setDailyQuote({ text: "Ship, learn, iterate.", author: "" });
+        }
+      } catch (error) {
+        if (!alive) return;
+        console.error("Failed to fetch quote:", error);
+        setDailyQuote({ text: "Ship, learn, iterate.", author: "" });
+      } finally {
+        if (alive) setQuoteLoading(false);
+      }
+    };
+    fetchQuote();
+    return () => { alive = false; };
   }, []);
 
   return (
@@ -557,12 +576,22 @@ useEffect(() => {
           <DailyBibleVerseCard />
           <Card title="Motivational" className="h-28">
             <div className="h-full flex flex-col items-center justify-center text-center px-3">
-              <div className="text-zinc-100 italic text-[15px] leading-snug">
-                “{dailyQuote?.text || '…'}”
-              </div>
-              {dailyQuote?.author ? (
-                <div className="mt-1 text-xs text-zinc-400">— {dailyQuote.author}</div>
-              ) : null}
+              {quoteLoading ? (
+                <div className="text-zinc-400 text-sm">Loading quote…</div>
+              ) : dailyQuote ? (
+                <>
+                  <div className="text-zinc-100 italic text-[15px] leading-snug">
+                    "{dailyQuote.text}"
+                  </div>
+                  {dailyQuote.author ? (
+                    <div className="mt-1 text-xs text-zinc-400">— {dailyQuote.author}</div>
+                  ) : null}
+                </>
+              ) : (
+                <div className="text-zinc-100 italic text-[15px] leading-snug">
+                  "Ship, learn, iterate."
+                </div>
+              )}
             </div>
           </Card>
           <MiniCalendar wls={filteredWL} />
