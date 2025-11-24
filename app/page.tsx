@@ -572,11 +572,11 @@ useEffect(() => {
                     <Tooltip
                       cursor={{ fill: "transparent" }}
                       content={<ChainTooltip />}
-                      wrapperStyle={{ outline: "none" }}
+                      wrapperStyle={{ outline: "none", zIndex: 1000 }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center z-0">
                   <span className="text-[11px] uppercase tracking-[0.35em] text-zinc-500">
                     WL Total
                   </span>
@@ -748,38 +748,38 @@ function ChainTooltip({
 }) {
   if (!active || !payload?.length) return null;
   const datum = payload[0]?.payload as ChainPieDatum | undefined;
-  const color = payload[0]?.color ?? "#a855f7";
+  const color = datum ? CHAIN_COLORS[datum.name] : "#a855f7";
   if (!datum) return null;
 
   const visibleProjects = datum.projects.slice(0, 6);
   const hiddenCount = Math.max(datum.projects.length - visibleProjects.length, 0);
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-[#0f172a]/95 px-5 py-4 text-sm text-white shadow-2xl max-w-[20rem]">
-      <div className="flex items-center gap-2 font-semibold text-base">
+    <div className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-zinc-200 shadow-2xl max-w-[18rem]">
+      <div className="flex items-center gap-2 font-semibold text-white">
         <span
-          className="h-3 w-3 rounded-full"
+          className="h-2.5 w-2.5 rounded-full"
           style={{ backgroundColor: color }}
         />
         {datum.name}
       </div>
-      <div className="mt-1 text-3xl font-bold tracking-tight">{datum.value} WL</div>
-      <div className="mt-3 max-h-48 space-y-1 overflow-y-auto pr-1 text-sm">
+      <div className="mt-1 text-2xl font-semibold text-white">{datum.value} WL</div>
+      <div className="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs">
         {visibleProjects.length ? (
           visibleProjects.map((project) => (
             <div
               key={project.label}
-              className="flex items-center justify-between gap-4 text-white/90"
+              className="flex items-center justify-between gap-3 text-zinc-200"
             >
               <span className="truncate">{project.label}</span>
-              <span className="font-semibold text-white text-base">{project.count}</span>
+              <span className="font-semibold text-white">{project.count}</span>
             </div>
           ))
         ) : (
-          <div className="text-zinc-400 text-sm">No whitelists yet.</div>
+          <div className="text-zinc-400">No whitelists yet.</div>
         )}
         {hiddenCount > 0 && (
-          <div className="pt-1 text-[12px] text-zinc-400">
+          <div className="text-[11px] text-zinc-500">
             +{hiddenCount} more project{hiddenCount > 1 ? "s" : ""}
           </div>
         )}
