@@ -265,9 +265,10 @@ useEffect(() => {
     return CHAIN_ORDER.map((name) => ({ name, value: counts[name] }));
   }, [wls]);
 
-  // Convert time from any timezone to PH time (UTC+8)
-  const convertToPHTime = (time: string, timezone: string): string => {
-    if (!time || !timezone) return "";
+  // Convert date and time from any timezone to PH time (UTC+8)
+  // Returns { date: string, time: string } with proper date adjustment
+  const convertToPHDateTime = (date: string, time: string, timezone: string): { date: string; time: string } => {
+    if (!date || !time || !timezone) return { date: date || "", time: "" };
     
     // Timezone offsets in hours from UTC
     const timezoneOffsets: Record<string, number> = {
@@ -284,30 +285,47 @@ useEffect(() => {
     const sourceOffset = timezoneOffsets[timezone] ?? 0;
     const phOffset = 8; // PH is UTC+8
     
-    // Parse time (HH:MM format)
-    const [hours, minutes] = time.split(":").map(Number);
-    if (isNaN(hours) || isNaN(minutes)) return "";
-    
-    // Convert to UTC first, then to PH time
-    const totalMinutes = hours * 60 + minutes;
-    const utcMinutes = totalMinutes - (sourceOffset * 60);
-    const phMinutes = utcMinutes + (phOffset * 60);
-    
-    // Normalize to 0-1439 minutes (24 hours)
-    let normalizedMinutes = phMinutes % 1440;
-    if (normalizedMinutes < 0) normalizedMinutes += 1440;
-    
-    const phHours = Math.floor(normalizedMinutes / 60);
-    const phMins = normalizedMinutes % 60;
-    
-    // Format as 12-hour time with AM/PM
-    const period = phHours >= 12 ? "PM" : "AM";
-    const displayHours = phHours % 12 || 12;
-    return `${displayHours}:${String(phMins).padStart(2, "0")} ${period}`;
+    try {
+      // Parse the date (YYYY-MM-DD format)
+      const [year, month, day] = date.split("-").map(Number);
+      if (isNaN(year) || isNaN(month) || isNaN(day)) return { date, time: "" };
+      
+      // Parse time (HH:MM format)
+      const [hours, minutes] = time.split(":").map(Number);
+      if (isNaN(hours) || isNaN(minutes)) return { date, time: "" };
+      
+      // Create a date string in ISO format, treating the input as if it's in the source timezone
+      // We'll create a UTC date by subtracting the source offset
+      const sourceDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+      // Convert source time to UTC by subtracting the source offset
+      const utcTime = sourceDate.getTime() - (sourceOffset * 60 * 60 * 1000);
+      // Convert UTC to PH time by adding PH offset
+      const phTime = utcTime + (phOffset * 60 * 60 * 1000);
+      const phDate = new Date(phTime);
+      
+      // Extract PH date and time
+      const phYear = phDate.getUTCFullYear();
+      const phMonth = String(phDate.getUTCMonth() + 1).padStart(2, "0");
+      const phDay = String(phDate.getUTCDate()).padStart(2, "0");
+      const phHours = phDate.getUTCHours();
+      const phMins = phDate.getUTCMinutes();
+      
+      const convertedDate = `${phYear}-${phMonth}-${phDay}`;
+      
+      // Format as 12-hour time with AM/PM
+      const period = phHours >= 12 ? "PM" : "AM";
+      const displayHours = phHours % 12 || 12;
+      const convertedTime = `${displayHours}:${String(phMins).padStart(2, "0")} ${period}`;
+      
+      return { date: convertedDate, time: convertedTime };
+    } catch (error) {
+      console.error("Error converting date/time:", error);
+      return { date, time: "" };
+    }
   };
 
 
-  // Upcoming schedules with converted PH time
+  // Upcoming schedules with converted PH time and date
   const upcomingSchedules = useMemo(() => {
     const now = new Date();
     return wls
@@ -317,14 +335,20 @@ useEffect(() => {
         return mintDate >= now;
       })
       .map((w) => {
-        const phTime = w.mintTime && w.mintTimezone 
-          ? convertToPHTime(w.mintTime, w.mintTimezone)
-          : "";
+        let phDate = w.mintDate;
+        let phTime = "";
+        
+        if (w.mintTime && w.mintTimezone && w.mintDate) {
+          const converted = convertToPHDateTime(w.mintDate, w.mintTime, w.mintTimezone);
+          phDate = converted.date;
+          phTime = converted.time;
+        }
+        
         return {
           id: w.id,
           project: w.project,
           phase: w.type,
-          mintDate: w.mintDate,
+          mintDate: phDate,
           phTime,
         };
       })
