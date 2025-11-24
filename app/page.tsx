@@ -85,13 +85,13 @@ const CHAIN_COLORS: Record<Chain, string> = {
 
 const CHAIN_ORDER: Chain[] = [
   "ETH",
-  "SOL",
   "BTC",
-  "APE",
-  "BASE",
-  "ABS",
+  "SOL",
   "Monad",
+  "BASE",
   "HYPER",
+  "ABS",
+  "APE",
 ];
 
 /* --- Demo seed collabs --- */
@@ -490,7 +490,29 @@ useEffect(() => {
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend />
+                <Legend 
+                  content={({ payload }) => {
+                    if (!payload || !payload.length) return null;
+                    // Use the pie data order instead of payload order
+                    const orderedPayload = pie.map(pieItem => 
+                      payload.find(p => p.value === pieItem.name)
+                    ).filter(Boolean);
+                    
+                    return (
+                      <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
+                        {orderedPayload.map((entry: any, index: number) => (
+                          <div key={index} className="flex items-center gap-1.5">
+                            <div 
+                              className="w-3 h-3 rounded-sm" 
+                              style={{ backgroundColor: entry.color }}
+                            />
+                            <span className="text-xs text-zinc-400">{entry.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </Card>
