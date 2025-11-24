@@ -707,7 +707,7 @@ useEffect(() => {
             name="Skyyy"
             x="0xSkyisthelimitt"
             discord="Skyisthelimitt"
-            role="Founder & Collab Manager"
+            role="Collab Manager"
           />
           <DailyBibleVerseCard />
           <Card title="Motivational" className="h-28">
