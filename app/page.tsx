@@ -325,6 +325,20 @@ useEffect(() => {
   };
 
 
+  // Format date from YYYY-MM-DD to "Month-DD-YYYY"
+  const formatDate = (dateStr: string): string => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr + "T00:00:00"); // Add time to avoid timezone issues
+      const month = date.toLocaleString("en-US", { month: "long" });
+      const day = date.getDate();
+      const year = date.getFullYear();
+      return `${month}-${day}-${year}`;
+    } catch (error) {
+      return dateStr; // Return original if parsing fails
+    }
+  };
+
   // Upcoming schedules with converted PH time and date
   const upcomingSchedules = useMemo(() => {
     const now = new Date();
@@ -349,6 +363,7 @@ useEffect(() => {
           project: w.project,
           phase: w.type,
           mintDate: phDate,
+          formattedDate: phDate ? formatDate(phDate) : "",
           phTime,
         };
       })
@@ -586,7 +601,7 @@ useEffect(() => {
                       {s.phTime && (
                         <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
                       )}
-                      <div className="text-xs text-zinc-500">{s.mintDate}</div>
+                      <div className="text-xs text-zinc-500">{s.formattedDate}</div>
                     </div>
                   </li>
                 ))
