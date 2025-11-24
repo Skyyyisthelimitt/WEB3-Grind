@@ -22,12 +22,21 @@ function createSessionToken(): string {
 
 export async function POST(req: Request) {
   try {
-    const { password } = await req.json();
+    const { username, password } = await req.json();
 
     if (!password) {
       return NextResponse.json(
         { error: "Password is required" },
         { status: 400 }
+      );
+    }
+
+    // For now, username is optional but can be validated if ADMIN_USERNAME is set
+    const adminUsername = process.env.ADMIN_USERNAME;
+    if (adminUsername && username !== adminUsername) {
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
       );
     }
 
