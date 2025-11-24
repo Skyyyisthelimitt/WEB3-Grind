@@ -586,15 +586,15 @@ useEffect(() => {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 px-4 py-3">
-                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-zinc-400">
+              <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 px-5 py-3">
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-white/80">
                   {CHAIN_ORDER.map((chain) => (
                     <div key={chain} className="flex items-center gap-1.5">
                       <span
-                        className="h-2 w-2 rounded-full"
+                        className="h-2.5 w-2.5 rounded-full"
                         style={{ backgroundColor: CHAIN_COLORS[chain] }}
                       />
-                      <span className="font-medium text-white">{chain}</span>
+                      <span className="font-semibold tracking-wide">{chain}</span>
                     </div>
                   ))}
                 </div>
@@ -755,31 +755,31 @@ function ChainTooltip({
   const hiddenCount = Math.max(datum.projects.length - visibleProjects.length, 0);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-950/90 px-4 py-3 text-sm text-zinc-200 shadow-2xl backdrop-blur max-w-[18rem]">
-      <div className="flex items-center gap-2 font-semibold text-white">
+    <div className="rounded-3xl border border-white/10 bg-[#0f172a]/95 px-5 py-4 text-sm text-white shadow-2xl max-w-[20rem]">
+      <div className="flex items-center gap-2 font-semibold text-base">
         <span
-          className="h-2.5 w-2.5 rounded-full"
+          className="h-3 w-3 rounded-full"
           style={{ backgroundColor: color }}
         />
         {datum.name}
       </div>
-      <div className="mt-1 text-2xl font-semibold text-white">{datum.value} WL</div>
-      <div className="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs">
+      <div className="mt-1 text-3xl font-bold tracking-tight">{datum.value} WL</div>
+      <div className="mt-3 max-h-48 space-y-1 overflow-y-auto pr-1 text-sm">
         {visibleProjects.length ? (
           visibleProjects.map((project) => (
             <div
               key={project.label}
-              className="flex items-center justify-between gap-3 text-zinc-200"
+              className="flex items-center justify-between gap-4 text-white/90"
             >
               <span className="truncate">{project.label}</span>
-              <span className="font-semibold text-white">{project.count}</span>
+              <span className="font-semibold text-white text-base">{project.count}</span>
             </div>
           ))
         ) : (
-          <div className="text-zinc-400">No whitelists yet.</div>
+          <div className="text-zinc-400 text-sm">No whitelists yet.</div>
         )}
         {hiddenCount > 0 && (
-          <div className="text-[11px] text-zinc-500">
+          <div className="pt-1 text-[12px] text-zinc-400">
             +{hiddenCount} more project{hiddenCount > 1 ? "s" : ""}
           </div>
         )}
