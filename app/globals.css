@@ -49,3 +49,28 @@ aside.w-20 { /* handled by Tailwind classes; keep for reference */ }
     radial-gradient(circle at 80% 70%, rgba(0, 0, 0, 0.25), transparent 60%);
   pointer-events: none;
 }
+
+.login-card-glow {
+  position: relative;
+}
+
+.login-card-glow::before,
+.login-card-glow::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 1.25rem;
+}
+
+.login-card-glow::before {
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  opacity: 0.9;
+}
+
+.login-card-glow::after {
+  inset: -12px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 55%);
+  filter: blur(12px);
+  opacity: 0.6;
+}

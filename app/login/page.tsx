@@ -66,15 +66,16 @@ export default function LoginPage() {
   return (
     <div className="login-grid-bg min-h-screen flex items-center justify-center p-4">
       {/* Main Login Container */}
-      <div className="relative z-[1] w-full max-w-6xl rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50">
-        <div className="flex min-h-[600px]">
-          {/* Left Section - Login Form */}
-          <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
-            <div className="w-full max-w-sm">
+      <div className="login-card-glow relative z-[1] w-full max-w-6xl rounded-2xl border border-white/15 shadow-[0_0_70px_rgba(255,255,255,0.2)]">
+        <div className="rounded-2xl overflow-hidden bg-zinc-900/80 backdrop-blur-sm">
+          <div className="flex min-h-[600px]">
+            {/* Left Section - Login Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
+              <div className="w-full max-w-sm">
               {/* Icon */}
               <div className="flex justify-center mb-8">
                 <div className="w-12 h-12 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-15 h-13 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
                   </svg>
                 </div>
@@ -170,53 +171,54 @@ export default function LoginPage() {
               </form>
             </div>
           </div>
-
-          {/* Right Section - Image Carousel */}
-          <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-zinc-900 via-black to-zinc-950 overflow-hidden">
-            {/* Image Carousel */}
-            <div className="absolute inset-0">
-              {loginImages.map((img, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 transition-opacity duration-1000 ${
-                    index === currentImageIndex ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <Image
-                    src={img}
-                    alt={`Login image ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    priority={index === 0}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                </div>
-              ))}
-            </div>
-
-            {/* Content Overlay */}
-            <div className="relative z-10 flex flex-col justify-end h-full p-12">
-              <div className="max-w-md">
-                <h2 className="text-4xl font-bold text-white mb-4">Manage your WEB3 Journey</h2>
-                <p className="text-zinc-300 text-lg">
-                  Track your whitelists and collaborations all in one place
-                </p>
+ 
+            {/* Right Section - Image Carousel */}
+            <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-zinc-900 via-black to-zinc-950 overflow-hidden">
+              {/* Image Carousel */}
+              <div className="absolute inset-0">
+                {loginImages.map((img, index) => (
+                  <div
+                    key={index}
+                    className={`absolute inset-0 transition-opacity duration-1000 ${
+                      index === currentImageIndex ? "opacity-100" : "opacity-0"
+                    }`}
+                  >
+                    <Image
+                      src={img}
+                      alt={`Login image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      priority={index === 0}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                  </div>
+                ))}
               </div>
 
-              {/* Pagination Dots */}
-              <div className="flex gap-2 mt-8">
-                {loginImages.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentImageIndex
-                        ? "w-8 bg-blue-500"
-                        : "w-2 bg-zinc-600 hover:bg-zinc-500"
-                    }`}
-                    aria-label={`Go to slide ${index + 1}`}
-                  />
-                ))}
+              {/* Content Overlay */}
+              <div className="relative z-10 flex flex-col justify-end h-full p-12">
+                <div className="max-w-md">
+                  <h2 className="text-4xl font-bold text-white mb-4">Manage your WEB3 Journey</h2>
+                  <p className="text-zinc-300 text-lg">
+                    Track your whitelists and collaborations all in one place
+                  </p>
+                </div>
+
+                {/* Pagination Dots */}
+                <div className="flex gap-2 mt-8">
+                  {loginImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`h-2 rounded-full transition-all ${
+                        index === currentImageIndex
+                          ? "w-8 bg-blue-500"
+                          : "w-2 bg-zinc-600 hover:bg-zinc-500"
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
