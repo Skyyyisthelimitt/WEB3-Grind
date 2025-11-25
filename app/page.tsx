@@ -144,6 +144,7 @@ export default function DashboardPage() {
   const [loadingCoins, setLoadingCoins] = useState(true);
   const [hoveredChain, setHoveredChain] = useState<Chain | null>(null);
   const [usdToPhp, setUsdToPhp] = useState<number>(55.5); // Default rate, will be updated
+  const [cryptoTimeframe, setCryptoTimeframe] = useState<"1" | "7" | "30">("7");
 
   useEffect(() => {
     let alive = true;
@@ -174,47 +175,60 @@ export default function DashboardPage() {
     const retryDelay = 10_000; // 10 seconds
     async function fetchCoinsWithRetry() {
       try {
+        // Fetch current prices
         const priceRes = await fetch('/api/crypto-prices');
         if (!priceRes.ok) throw new Error(`Price fetch failed: ${priceRes.status}`);
         const priceObj = await priceRes.json();
         const data = priceObj.data || {};
+        
         // Map: { BTC: { quote: { USD: { price, percent_change_24h } } }, ... }
         const nowPrice = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.price ?? initialCoins.find(c => c.symbol === symbol)?.price);
         const change24h = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.percent_change_24h ?? initialCoins.find(c => c.symbol === symbol)?.changePct);
+        
+        // Fetch historical data for all coins in parallel
+        const [btcHistory, ethHistory, solHistory] = await Promise.all([
+          fetch(`/api/crypto-history?symbol=BTC&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
+          fetch(`/api/crypto-history?symbol=ETH&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
+          fetch(`/api/crypto-history?symbol=SOL&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
+        ]);
+        
         const updated: Coin[] = [
           {
             symbol: "BTC" as const,
             name: "Bitcoin",
             price: nowPrice('BTC'),
             changePct: change24h('BTC'),
-            series: initialCoins[0].series,
+            series: btcHistory.prices && btcHistory.prices.length > 0 ? btcHistory.prices : initialCoins[0].series,
           },
           {
             symbol: "ETH" as const,
             name: "Ethereum",
             price: nowPrice('ETH'),
             changePct: change24h('ETH'),
-            series: initialCoins[1].series,
+            series: ethHistory.prices && ethHistory.prices.length > 0 ? ethHistory.prices : initialCoins[1].series,
           },
           {
             symbol: "SOL" as const,
             name: "Solana",
             price: nowPrice('SOL'),
             changePct: change24h('SOL'),
-            series: initialCoins[2].series,
+            series: solHistory.prices && solHistory.prices.length > 0 ? solHistory.prices : initialCoins[2].series,
           },
         ];
-        setCoins(updated);
-        setLoadingCoins(false);
-        retryCount = 0;
+        
+        if (alive) {
+          setCoins(updated);
+          setLoadingCoins(false);
+          retryCount = 0;
+        }
       } catch (e) {
         console.error("Failed to fetch coin data", e);
-        setLoadingCoins(false);
-        if (alive && retryCount < maxRetries) {
-          retryCount++;
-          setTimeout(fetchCoinsWithRetry, retryDelay);
-        } else if (!alive) {
-          return;
+        if (alive) {
+          setLoadingCoins(false);
+          if (retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(fetchCoinsWithRetry, retryDelay);
+          }
         }
       }
     }
@@ -224,7 +238,7 @@ export default function DashboardPage() {
       alive = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [cryptoTimeframe]);
 
   // Fetch USD to PHP exchange rate
   useEffect(() => {
@@ -759,9 +773,9 @@ useEffect(() => {
           {/* Crypto cards (dynamic) */}
           {coins.length > 0 ? (
             <>
-              <div className="md:row-start-3"><CryptoCard coin={coins[0]} usdToPhp={usdToPhp} /></div>
-              <div className="md:row-start-3"><CryptoCard coin={coins[1]} usdToPhp={usdToPhp} /></div>
-              <div className="md:row-start-3"><CryptoCard coin={coins[2]} usdToPhp={usdToPhp} /></div>
+              <div className="md:row-start-3"><CryptoCard coin={coins[0]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
+              <div className="md:row-start-3"><CryptoCard coin={coins[1]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
+              <div className="md:row-start-3"><CryptoCard coin={coins[2]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
             </>
           ) : (
             <div className="col-span-3 text-center text-zinc-500">Loading prices…</div>
@@ -1072,10 +1086,15 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
 }
 
 /* --- Crypto card --- */
-function CryptoCard({ coin, usdToPhp }: { coin: Coin; usdToPhp: number }) {
+function CryptoCard({ coin, usdToPhp, timeframe, onTimeframeChange }: { coin: Coin; usdToPhp: number; timeframe: "1" | "7" | "30"; onTimeframeChange: (tf: "1" | "7" | "30") => void }) {
   const up = coin.changePct >= 0;
   const color = up ? "#22c55e" : "#ef4444";
-  const data = coin.series.map((v, i) => ({ x: i, y: v }));
+  
+  // Ensure we have valid data for the graph
+  const seriesData = Array.isArray(coin.series) && coin.series.length > 0 
+    ? coin.series 
+    : [coin.price, coin.price, coin.price]; // Fallback to current price if no data
+  const data = seriesData.map((v, i) => ({ x: i, y: Number(v) || 0 }));
 
   const ICONS: Record<Coin["symbol"], StaticImageData> = {
     BTC: btcIcon,
@@ -1134,11 +1153,42 @@ function CryptoCard({ coin, usdToPhp }: { coin: Coin; usdToPhp: number }) {
               })})
             </span>
           </div>
-          <div className="mt-1 text-sm">
+          <div className="mt-1 flex items-center gap-2">
             <span className={`${up ? "text-emerald-300" : "text-rose-300"} font-semibold`}>
               {up ? "+" : ""}{coin.changePct.toFixed(2)}%
-            </span>{" "}
-            <span className="text-zinc-400">This week</span>
+            </span>
+            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg px-1.5 py-0.5 border border-zinc-700/50">
+              <button
+                onClick={() => onTimeframeChange("1")}
+                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
+                  timeframe === "1"
+                    ? "bg-blue-600/20 text-blue-300 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                1D
+              </button>
+              <button
+                onClick={() => onTimeframeChange("7")}
+                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
+                  timeframe === "7"
+                    ? "bg-blue-600/20 text-blue-300 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                7D
+              </button>
+              <button
+                onClick={() => onTimeframeChange("30")}
+                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
+                  timeframe === "30"
+                    ? "bg-blue-600/20 text-blue-300 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                1M
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1149,17 +1199,35 @@ function CryptoCard({ coin, usdToPhp }: { coin: Coin; usdToPhp: number }) {
         </div>
 
         <div className="absolute left-0 right-0 bottom-0 h-16">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ left: 6, right: 12, top: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id={`grad-${coin.symbol}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.5} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <Area type="monotone" dataKey="y" stroke={color} strokeWidth={1.6} fillOpacity={1} fill={`url(#grad-${coin.symbol})`} />
-            </AreaChart>
-          </ResponsiveContainer>
+          {data.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart 
+                data={data} 
+                margin={{ left: 0, right: 0, top: 4, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id={`grad-${coin.symbol}-${timeframe}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area 
+                  type="monotone" 
+                  dataKey="y" 
+                  stroke={color} 
+                  strokeWidth={1.6} 
+                  fillOpacity={1} 
+                  fill={`url(#grad-${coin.symbol}-${timeframe})`}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xs">
+              Loading chart...
+            </div>
+          )}
         </div>
       </div>
     </div>
