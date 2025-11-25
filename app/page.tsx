@@ -142,7 +142,8 @@ export default function DashboardPage() {
   // live coins
   const [coins, setCoins] = useState<Coin[]>(initialCoins);
   const [loadingCoins, setLoadingCoins] = useState(true);
-const [hoveredChain, setHoveredChain] = useState<Chain | null>(null);
+  const [hoveredChain, setHoveredChain] = useState<Chain | null>(null);
+  const [usdToPhp, setUsdToPhp] = useState<number>(55.5); // Default rate, will be updated
 
   useEffect(() => {
     let alive = true;
@@ -223,6 +224,27 @@ const [hoveredChain, setHoveredChain] = useState<Chain | null>(null);
       alive = false;
       clearInterval(interval);
     };
+  }, []);
+
+  // Fetch USD to PHP exchange rate
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        // Using exchangerate-api.com free tier
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        if (alive && res.ok) {
+          const data = await res.json();
+          if (data.rates && data.rates.PHP) {
+            setUsdToPhp(data.rates.PHP);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch USD to PHP rate:", e);
+        // Keep default rate
+      }
+    })();
+    return () => { alive = false; };
   }, []);
 
 // at top of DashboardPage (client component)
@@ -737,9 +759,9 @@ useEffect(() => {
           {/* Crypto cards (dynamic) */}
           {coins.length > 0 ? (
             <>
-              <div className="md:row-start-3"><CryptoCard coin={coins[0]} /></div>
-              <div className="md:row-start-3"><CryptoCard coin={coins[1]} /></div>
-              <div className="md:row-start-3"><CryptoCard coin={coins[2]} /></div>
+              <div className="md:row-start-3"><CryptoCard coin={coins[0]} usdToPhp={usdToPhp} /></div>
+              <div className="md:row-start-3"><CryptoCard coin={coins[1]} usdToPhp={usdToPhp} /></div>
+              <div className="md:row-start-3"><CryptoCard coin={coins[2]} usdToPhp={usdToPhp} /></div>
             </>
           ) : (
             <div className="col-span-3 text-center text-zinc-500">Loading prices…</div>
@@ -1050,7 +1072,7 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
 }
 
 /* --- Crypto card --- */
-function CryptoCard({ coin }: { coin: Coin }) {
+function CryptoCard({ coin, usdToPhp }: { coin: Coin; usdToPhp: number }) {
   const up = coin.changePct >= 0;
   const color = up ? "#22c55e" : "#ef4444";
   const data = coin.series.map((v, i) => ({ x: i, y: v }));
@@ -1106,6 +1128,11 @@ function CryptoCard({ coin }: { coin: Coin }) {
               currency: "USD",
               maximumFractionDigits: coin.price < 1 ? 4 : 2,
             })}
+            <span className="text-sm font-normal text-zinc-400 ml-2">
+              (₱{(coin.price * usdToPhp).toLocaleString(undefined, {
+                maximumFractionDigits: coin.price < 1 ? 4 : 2,
+              })})
+            </span>
           </div>
           <div className="mt-1 text-sm">
             <span className={`${up ? "text-emerald-300" : "text-rose-300"} font-semibold`}>
