@@ -251,15 +251,59 @@ useEffect(() => {
     [wls, collabs]
   );
 
+  // Helper function to get the actual mint datetime (in UTC) for comparison
+  const getMintDateTime = (mintDate: string, mintTime?: string, mintTimezone?: string): Date => {
+    if (!mintDate) return new Date(0);
+    
+    const timezoneOffsets: Record<string, number> = {
+      UTC: 0,
+      GMT: 0,
+      EST: -5,
+      PST: -8,
+      CST: -6,
+      JST: 9,
+      SGT: 8,
+      PH: 8,
+    };
+    
+    try {
+      const [year, month, day] = mintDate.split("-").map(Number);
+      if (isNaN(year) || isNaN(month) || isNaN(day)) {
+        // Fallback: treat as end of day
+        return new Date(Date.UTC(year || 2000, (month || 1) - 1, day || 1, 23, 59, 59));
+      }
+      
+      if (mintTime && mintTimezone) {
+        // Parse time (HH:MM format)
+        const [hours, minutes] = mintTime.split(":").map(Number);
+        if (!isNaN(hours) && !isNaN(minutes)) {
+          const sourceOffset = timezoneOffsets[mintTimezone] ?? 0;
+          // Create UTC date: treat the input as if it's in the source timezone, then convert to UTC
+          const sourceDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+          const utcDateTime = new Date(sourceDateTime.getTime() - (sourceOffset * 60 * 60 * 1000));
+          return utcDateTime;
+        }
+      }
+      
+      // If no time specified, treat as end of day (23:59:59) in UTC
+      return new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
+    } catch (error) {
+      console.error("Error parsing mint datetime:", error);
+      // Fallback: treat as end of day
+      const [year, month, day] = mintDate.split("-").map(Number);
+      return new Date(Date.UTC(year || 2000, (month || 1) - 1, day || 1, 23, 59, 59));
+    }
+  };
+
   const upcoming7 = useMemo(() => {
     const now = new Date();
     const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     return wls.filter(
-      (w) =>
-        w.mintDate &&
-        new Date(w.mintDate) >= now &&
-        new Date(w.mintDate) <= in7 &&
-        w.status !== "Minted"
+      (w) => {
+        if (!w.mintDate || w.status === "Minted") return false;
+        const mintDateTime = getMintDateTime(w.mintDate, w.mintTime, w.mintTimezone);
+        return mintDateTime > now && mintDateTime <= in7;
+      }
     ).length;
   }, [wls]);
 
@@ -387,8 +431,10 @@ useEffect(() => {
     return wls
       .filter((w) => {
         if (!w.mintDate || w.status === "Minted") return false;
-        const mintDate = new Date(w.mintDate);
-        return mintDate >= now;
+        // Compare actual mint datetime (including time) with current time
+        const mintDateTime = getMintDateTime(w.mintDate, w.mintTime, w.mintTimezone);
+        // Keep if mint time hasn't passed yet (mintDateTime > now)
+        return mintDateTime > now;
       })
       .map((w) => {
         let phDate = w.mintDate;
