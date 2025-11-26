@@ -1,4 +1,3 @@
-// app/whitelists/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -27,7 +26,7 @@ export default function WhitelistsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   
-  // Form state
+
   const [formData, setFormData] = useState({
     project: "",
     x: "",
@@ -50,7 +49,7 @@ export default function WhitelistsPage() {
         alert(data.error || "Failed to delete whitelist");
         return;
       }
-      // Refresh the list
+
       const refreshRes = await fetch("/api/wl", { cache: "no-store" });
       const refreshJson = await refreshRes.json();
       setRows(Array.isArray(refreshJson?.wls) ? refreshJson.wls : []);
@@ -107,7 +106,7 @@ export default function WhitelistsPage() {
             }}
             className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
           >
-            + Add Whitelist
+            Add Whitelist
           </button>
         </div>
       </div>
