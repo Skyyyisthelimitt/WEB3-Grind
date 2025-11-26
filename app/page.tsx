@@ -583,13 +583,13 @@ useEffect(() => {
             href="/whitelists"
             className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
           >
-            + Add Whitelist
+            Add Whitelist
           </Link>
           <Link
             href="/collabs"
             className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
           >
-            + Add Collab
+            Add Collab
           </Link>
         </div>
       </div>
