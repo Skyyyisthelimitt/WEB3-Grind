@@ -613,7 +613,7 @@ useEffect(() => {
             className="h-28"
           />
           <KPICard
-            title="Upcoming (7d)"
+            title="Upcoming mints (7d)"
             value={upcoming7}
             icon="🗓️"
             tone="emerald"
