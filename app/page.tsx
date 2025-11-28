@@ -792,7 +792,7 @@ useEffect(() => {
             role="Collab Manager"
           />
           <DailyBibleVerseCard />
-          <Card title="Motivational" className="h-28">
+          <Card title="Quotes" className="h-28">
             <div className="h-full flex flex-col items-center justify-center text-center px-3">
               {quoteLoading ? (
                 <div className="text-zinc-400 text-sm">Loading quote…</div>
