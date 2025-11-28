@@ -787,7 +787,7 @@ useEffect(() => {
           <ProfileCard
             imageSrc={pfp}
             name="Skyyy"
-            x="0xSkyisthelimitt"
+            x="0xSkyisthelimit"
             discord="Skyisthelimitt"
             role="Collab Manager"
           />
