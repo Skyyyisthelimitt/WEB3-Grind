@@ -125,7 +125,7 @@ const initialCoins: Coin[] = [
   {
     symbol: "SOL",
     name: "Solana",
-    price: 158.1,
+    price: 158.3,
     changePct: -0.84,
     series: [14, 15, 15, 16, 15, 16, 17, 16, 16, 15, 16, 15],
   },
