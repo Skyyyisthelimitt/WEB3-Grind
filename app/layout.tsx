@@ -6,7 +6,11 @@ export const metadata = {
   title: "WEB3 Manager",
   description: "Personal NFT WL & Collab manager",
   icons: {
-    icon: '/logo.png',
+    icon: [
+      { url: '/logo.png' },
+      { url: '/logo.png', sizes: '60x60', type: 'image/png' },
+    ],
+    apple: '/logo.png',
   },
 };
 
