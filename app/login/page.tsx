@@ -71,7 +71,7 @@ export default function LoginPage() {
       } else {
         setError(data.error || "Invalid credentials");
       }
-    } catch (err) {
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);

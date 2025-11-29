@@ -5,7 +5,6 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard,
-  Users,
   ClipboardList,
   ChevronLeft,
   ChevronRight,

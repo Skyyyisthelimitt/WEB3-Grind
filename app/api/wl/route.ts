@@ -59,13 +59,13 @@ const toISO = (v: string): string | undefined => {
   const d = new Date(v);
   return isNaN(d.getTime()) ? undefined : new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
 };
-const toNum = (v: string) => {
+const _toNum = (v: string) => {
   const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
   return Number.isFinite(n) ? n : undefined;
 };
 
 // tiny CSV parser
-function parseCSV(text: string): string[][] {
+function _parseCSV(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [], cell = "", inQ = false;
   for (let i=0;i<text.length;i++) {

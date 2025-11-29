@@ -131,7 +131,7 @@ const CHAIN_ORDER: Chain[] = [
 ];
 
 /* --- Demo seed collabs --- */
-const seedCollabs: Collab[] = [
+const _seedCollabs: Collab[] = [
   { id: 1, project: "Melio", status: "Not Posted", dueAt: "2025-08-28" },
   { id: 2, project: "Mempoolio", status: "Posted", dueAt: "2025-08-30" },
 ];
@@ -606,7 +606,7 @@ useEffect(() => {
       const day = date.getDate();
       const year = date.getFullYear();
       return `${month}-${day}-${year}`;
-    } catch (error) {
+    } catch {
       return dateStr; // Return original if parsing fails
     }
   };
@@ -1194,7 +1194,7 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
   }
   while (cells.length < 42) cells.push({ label: cells.length - (startWeekday + daysInMonth) + 1, muted: true });
 
-  const upcoming = [...wls]
+  const _upcoming = [...wls]
     .filter((w) => w.mintDate && new Date(w.mintDate) >= new Date())
     .sort((a, b) => (a.mintDate! > b.mintDate! ? 1 : -1))
     .slice(0, 3);
