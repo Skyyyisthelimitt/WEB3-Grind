@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import login1 from "../images/login1.png";
-import login2 from "../images/login2.jpg";
-import login3 from "../images/login3.jpg";
+import login2 from "../images/login2.png";
+import login3 from "../images/login3.png";
+import login4 from "../images/login4.png";
 
 const slides = [
   {
@@ -23,6 +24,11 @@ const slides = [
     title: "Stay On Top of Every Collaboration",
     description: "Clear deadlines. Clean tracking. Zero confusion.",
   },
+  {
+    image: login4,
+    title: "Inspire Your Journey",
+    description: "Display Bible verses and quotes that guide your daily grind and keep you motivated.",
+  },
 ];
 
 export default function LoginPage() {
@@ -33,13 +39,13 @@ export default function LoginPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const router = useRouter();
 
-  // Auto-slide carousel every 2 seconds
+  // Auto-slide carousel every 3 seconds
   useEffect(() => {
     if (slides.length === 0) return;
     
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % slides.length);
-    }, 2000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
