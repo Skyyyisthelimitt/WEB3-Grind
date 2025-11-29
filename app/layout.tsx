@@ -5,6 +5,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: "WEB3 Manager",
   description: "Personal NFT WL & Collab manager",
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
