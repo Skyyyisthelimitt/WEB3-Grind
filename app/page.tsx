@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ResponsiveContainer,
   PieChart,
@@ -69,9 +69,39 @@ type Collab = {
   community?: string;
 };
 
-type Coin = {
-  symbol: "BTC" | "ETH" | "SOL";
+type Timeframe = "1" | "7" | "30";
+
+type CoinSymbol =
+  | "BTC"
+  | "ETH"
+  | "SOL"
+  | "BNB"
+  | "XRP"
+  | "ADA"
+  | "DOGE"
+  | "AVAX"
+  | "MATIC";
+
+type CoinMeta = {
+  symbol: CoinSymbol;
   name: string;
+  icon?: StaticImageData;
+  accent: string;
+  chipBg: string;
+  ring: string;
+  corner: string;
+  seedPrice: number;
+  seedChange: number;
+  seedSeries: number[];
+};
+
+type CardConfig = {
+  id: string;
+  symbol: CoinSymbol;
+  timeframe: Timeframe;
+};
+
+type CardData = {
   price: number;
   changePct: number;
   series: number[];
@@ -106,29 +136,118 @@ const seedCollabs: Collab[] = [
   { id: 2, project: "Mempoolio", status: "Posted", dueAt: "2025-08-30" },
 ];
 
-/* --- Initial coin seed (visible while first fetch resolves) --- */
-const initialCoins: Coin[] = [
-  {
+/* --- Coin palette & defaults --- */
+const COIN_LIBRARY: Record<CoinSymbol, CoinMeta> = {
+  BTC: {
     symbol: "BTC",
     name: "Bitcoin",
-    price: 67250,
-    changePct: 2.15,
-    series: [62, 64, 61, 63, 66, 65, 67, 66, 68, 69, 67, 68],
+    icon: btcIcon,
+    accent: "#f59e0b",
+    chipBg: "bg-amber-500/25",
+    ring: "ring-amber-400/30",
+    corner: "from-amber-500/20 via-transparent to-transparent",
+    seedPrice: 67250,
+    seedChange: 2.15,
+    seedSeries: [62, 64, 61, 63, 66, 65, 67, 66, 68, 69, 67, 68],
   },
-  {
+  ETH: {
     symbol: "ETH",
     name: "Ethereum",
-    price: 3450,
-    changePct: 1.32,
-    series: [32, 33, 31, 32, 33, 34, 33, 35, 36, 35, 36, 37],
+    icon: ethIcon,
+    accent: "#10b981",
+    chipBg: "bg-emerald-500/25",
+    ring: "ring-emerald-400/30",
+    corner: "from-emerald-500/20 via-transparent to-transparent",
+    seedPrice: 3450,
+    seedChange: 1.32,
+    seedSeries: [32, 33, 31, 32, 33, 34, 33, 35, 36, 35, 36, 37],
   },
-  {
+  SOL: {
     symbol: "SOL",
     name: "Solana",
-    price: 158.3,
-    changePct: -0.84,
-    series: [14, 15, 15, 16, 15, 16, 17, 16, 16, 15, 16, 15],
+    icon: solIcon,
+    accent: "#a855f7",
+    chipBg: "bg-fuchsia-500/25",
+    ring: "ring-fuchsia-400/30",
+    corner: "from-fuchsia-500/20 via-transparent to-transparent",
+    seedPrice: 158.3,
+    seedChange: -0.84,
+    seedSeries: [14, 15, 15, 16, 15, 16, 17, 16, 16, 15, 16, 15],
   },
+  BNB: {
+    symbol: "BNB",
+    name: "BNB",
+    accent: "#fcd34d",
+    chipBg: "bg-yellow-400/25",
+    ring: "ring-yellow-300/30",
+    corner: "from-yellow-400/20 via-transparent to-transparent",
+    seedPrice: 595,
+    seedChange: 0.85,
+    seedSeries: [560, 565, 570, 568, 572, 580, 585, 590, 592, 595, 593, 596],
+  },
+  XRP: {
+    symbol: "XRP",
+    name: "XRP",
+    accent: "#60a5fa",
+    chipBg: "bg-blue-400/20",
+    ring: "ring-blue-300/30",
+    corner: "from-blue-500/15 via-transparent to-transparent",
+    seedPrice: 0.62,
+    seedChange: -0.45,
+    seedSeries: [0.61, 0.6, 0.62, 0.63, 0.64, 0.63, 0.62, 0.63, 0.62, 0.61, 0.6],
+  },
+  ADA: {
+    symbol: "ADA",
+    name: "Cardano",
+    accent: "#38bdf8",
+    chipBg: "bg-sky-500/20",
+    ring: "ring-sky-300/30",
+    corner: "from-sky-500/15 via-transparent to-transparent",
+    seedPrice: 0.48,
+    seedChange: 1.2,
+    seedSeries: [0.44, 0.45, 0.46, 0.45, 0.47, 0.48, 0.49, 0.48, 0.47, 0.48],
+  },
+  DOGE: {
+    symbol: "DOGE",
+    name: "Dogecoin",
+    accent: "#fb923c",
+    chipBg: "bg-orange-400/20",
+    ring: "ring-orange-300/30",
+    corner: "from-orange-400/15 via-transparent to-transparent",
+    seedPrice: 0.21,
+    seedChange: -0.65,
+    seedSeries: [0.2, 0.19, 0.2, 0.205, 0.21, 0.215, 0.212, 0.21, 0.208, 0.207],
+  },
+  AVAX: {
+    symbol: "AVAX",
+    name: "Avalanche",
+    accent: "#fb7185",
+    chipBg: "bg-rose-400/25",
+    ring: "ring-rose-300/30",
+    corner: "from-rose-500/20 via-transparent to-transparent",
+    seedPrice: 48.6,
+    seedChange: 0.32,
+    seedSeries: [44, 45, 46, 47, 47.5, 48, 48.5, 49, 48.8, 48.6],
+  },
+  MATIC: {
+    symbol: "MATIC",
+    name: "Polygon",
+    accent: "#a855f7",
+    chipBg: "bg-purple-500/20",
+    ring: "ring-purple-300/30",
+    corner: "from-purple-500/15 via-transparent to-transparent",
+    seedPrice: 0.9,
+    seedChange: 0.5,
+    seedSeries: [0.82, 0.84, 0.85, 0.86, 0.88, 0.9, 0.89, 0.9, 0.91, 0.9],
+  },
+};
+
+const AVAILABLE_COINS = Object.values(COIN_LIBRARY);
+
+const DEFAULT_CARD_CONFIGS: CardConfig[] = [
+  { id: "card-btc", symbol: "BTC", timeframe: "7" },
+  { id: "card-eth", symbol: "ETH", timeframe: "7" },
+  { id: "card-sol", symbol: "SOL", timeframe: "7" },
 ];
 
 /* --------------------------- Page --------------------------- */
@@ -140,11 +259,26 @@ export default function DashboardPage() {
   const [loadingWL, setLoadingWL] = useState(true);
 
   // live coins
-  const [coins, setCoins] = useState<Coin[]>(initialCoins);
+  const [cardConfigs, setCardConfigs] = useState<CardConfig[]>(DEFAULT_CARD_CONFIGS);
+  const [cardData, setCardData] = useState<Record<string, CardData>>({});
   const [loadingCoins, setLoadingCoins] = useState(true);
   const [hoveredChain, setHoveredChain] = useState<Chain | null>(null);
   const [usdToPhp, setUsdToPhp] = useState<number>(55.5); // Default rate, will be updated
-  const [cryptoTimeframe, setCryptoTimeframe] = useState<"1" | "7" | "30">("7");
+  const fetchVersion = useRef(0);
+
+  const updateCardTimeframe = (id: string, timeframe: Timeframe) => {
+    setCardConfigs((prev) =>
+      prev.map((cfg) => (cfg.id === id ? { ...cfg, timeframe } : cfg))
+    );
+  };
+
+  const updateCardSymbol = (id: string, symbol: CoinSymbol) => {
+    setCardConfigs((prev) =>
+      prev.map((cfg) =>
+        cfg.id === id ? { ...cfg, symbol } : cfg
+      )
+    );
+  };
 
   useEffect(() => {
     let alive = true;
@@ -167,94 +301,94 @@ export default function DashboardPage() {
     };
   }, []);
 
-  /* ------------------ coin fetching (CoinGecko) ------------------ */
+  /* ------------------ coin fetching ------------------ */
   useEffect(() => {
     let alive = true;
-    let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 10_000; // 10 seconds
+    const currentVersion = ++fetchVersion.current;
 
-    setLoadingCoins(true);
+    const load = async () => {
+      if (!cardConfigs.length) return;
+      setLoadingCoins(true);
+      try {
+        const uniqueSymbols = Array.from(new Set(cardConfigs.map((cfg) => cfg.symbol)));
+        const symbolQuery = uniqueSymbols.join(",");
+        const priceRes = await fetch(`/api/crypto-prices?symbols=${symbolQuery}`, {
+          cache: "no-store",
+        });
+        const priceJson = await priceRes.json().catch(() => ({}));
+        const priceData = priceRes.ok ? priceJson.data || {} : {};
+        if (!priceRes.ok) {
+          console.warn("Price API fallback:", priceJson?.error || priceRes.statusText);
+        }
 
-    const fetchHistory = async (symbol: "BTC" | "ETH" | "SOL") => {
-      const res = await fetch(`/api/crypto-history?symbol=${symbol}&days=${cryptoTimeframe}`, {
-        cache: "no-store",
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(body?.error || `History fetch failed (${symbol})`);
+        const uniqueHistoryPairs = Array.from(
+          cardConfigs.reduce(
+            (map, cfg) => {
+              const key = `${cfg.symbol}-${cfg.timeframe}`;
+              if (!map.has(key)) {
+                map.set(key, { key, symbol: cfg.symbol, timeframe: cfg.timeframe });
+              }
+              return map;
+            },
+            new Map<string, { key: string; symbol: CoinSymbol; timeframe: Timeframe }>()
+          ).values()
+        );
+
+        const historyResults = await Promise.all(
+          uniqueHistoryPairs.map(async ({ key, symbol, timeframe }) => {
+            try {
+              const res = await fetch(
+                `/api/crypto-history?symbol=${symbol}&days=${timeframe}`,
+                { cache: "no-store" }
+              );
+              const json = await res.json().catch(() => ({}));
+              if (!res.ok || !Array.isArray(json?.prices)) {
+                throw new Error(json?.error || `History fetch failed (${symbol})`);
+              }
+              return { key, series: json.prices as number[] };
+            } catch (err) {
+              console.warn("History API fallback:", key, err);
+              return { key, series: [] };
+            }
+          })
+        );
+
+        if (!alive || fetchVersion.current !== currentVersion) return;
+
+        const historyMap = new Map<string, number[]>();
+        historyResults.forEach((entry) => {
+          historyMap.set(entry.key, entry.series);
+        });
+
+        const nextData: Record<string, CardData> = {};
+        cardConfigs.forEach((cfg) => {
+          const meta = COIN_LIBRARY[cfg.symbol];
+          const cmcEntry = priceData?.[cfg.symbol];
+          const historyKey = `${cfg.symbol}-${cfg.timeframe}`;
+          const series = historyMap.get(historyKey);
+          nextData[cfg.id] = {
+            price: Number(cmcEntry?.quote?.USD?.price ?? meta.seedPrice),
+            changePct: Number(cmcEntry?.quote?.USD?.percent_change_24h ?? meta.seedChange),
+            series: series && series.length ? series : meta.seedSeries,
+          };
+        });
+
+        setCardData(nextData);
+        setLoadingCoins(false);
+      } catch (error) {
+        if (!alive || fetchVersion.current !== currentVersion) return;
+        console.error("Failed to load coin cards", error);
+        setLoadingCoins(false);
       }
-      return Array.isArray(body?.prices) ? body.prices : [];
     };
 
-    async function fetchCoinsWithRetry() {
-      try {
-        // Fetch current prices
-        const priceRes = await fetch("/api/crypto-prices");
-        if (!priceRes.ok) throw new Error(`Price fetch failed: ${priceRes.status}`);
-        const priceObj = await priceRes.json();
-        const data = priceObj.data || {};
-
-        // Map: { BTC: { quote: { USD: { price, percent_change_24h } } }, ... }
-        const nowPrice = (symbol: "BTC" | "ETH" | "SOL") =>
-          Number(data[symbol]?.quote?.USD?.price ?? initialCoins.find((c) => c.symbol === symbol)?.price);
-        const change24h = (symbol: "BTC" | "ETH" | "SOL") =>
-          Number(data[symbol]?.quote?.USD?.percent_change_24h ?? initialCoins.find((c) => c.symbol === symbol)?.changePct);
-
-        // Fetch historical data for all coins in parallel
-        const [btcHistory, ethHistory, solHistory] = await Promise.all([
-          fetchHistory("BTC"),
-          fetchHistory("ETH"),
-          fetchHistory("SOL"),
-        ]);
-
-        const updated: Coin[] = [
-          {
-            symbol: "BTC" as const,
-            name: "Bitcoin",
-            price: nowPrice("BTC"),
-            changePct: change24h("BTC"),
-            series: btcHistory.length > 0 ? btcHistory : initialCoins[0].series,
-          },
-          {
-            symbol: "ETH" as const,
-            name: "Ethereum",
-            price: nowPrice("ETH"),
-            changePct: change24h("ETH"),
-            series: ethHistory.length > 0 ? ethHistory : initialCoins[1].series,
-          },
-          {
-            symbol: "SOL" as const,
-            name: "Solana",
-            price: nowPrice("SOL"),
-            changePct: change24h("SOL"),
-            series: solHistory.length > 0 ? solHistory : initialCoins[2].series,
-          },
-        ];
-
-        if (alive) {
-          setCoins(updated);
-          setLoadingCoins(false);
-          retryCount = 0;
-        }
-      } catch (e) {
-        console.error("Failed to fetch coin data", e);
-        if (alive) {
-          setLoadingCoins(false);
-          if (retryCount < maxRetries) {
-            retryCount++;
-            setTimeout(fetchCoinsWithRetry, retryDelay);
-          }
-        }
-      }
-    }
-    fetchCoinsWithRetry();
-    const interval = setInterval(fetchCoinsWithRetry, 60_000); // refresh each minute
+    load();
+    const interval = setInterval(load, 60_000);
     return () => {
       alive = false;
       clearInterval(interval);
     };
-  }, [cryptoTimeframe]);
+  }, [cardConfigs]);
 
   // Fetch USD to PHP exchange rate
   useEffect(() => {
@@ -787,14 +921,22 @@ useEffect(() => {
           </Card>
 
           {/* Crypto cards (dynamic) */}
-          {coins.length > 0 ? (
-            <>
-              <div className="md:row-start-3"><CryptoCard coin={coins[0]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
-              <div className="md:row-start-3"><CryptoCard coin={coins[1]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
-              <div className="md:row-start-3"><CryptoCard coin={coins[2]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
-            </>
+          {cardConfigs.length ? (
+            cardConfigs.map((cfg) => (
+              <div key={cfg.id} className="md:row-start-3">
+                <CryptoCard
+                  config={cfg}
+                  data={cardData[cfg.id]}
+                  usdToPhp={usdToPhp}
+                  loading={loadingCoins && !cardData[cfg.id]}
+                  onTimeframeChange={updateCardTimeframe}
+                  onSymbolChange={updateCardSymbol}
+                  availableCoins={AVAILABLE_COINS}
+                />
+              </div>
+            ))
           ) : (
-            <div className="col-span-3 text-center text-zinc-500">Loading prices…</div>
+            <div className="col-span-3 text-center text-zinc-500">No cards selected.</div>
           )}
         </div>
 
@@ -1102,143 +1244,199 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
 }
 
 /* --- Crypto card --- */
-function CryptoCard({ coin, usdToPhp, timeframe, onTimeframeChange }: { coin: Coin; usdToPhp: number; timeframe: "1" | "7" | "30"; onTimeframeChange: (tf: "1" | "7" | "30") => void }) {
-  const up = coin.changePct >= 0;
-  const color = up ? "#22c55e" : "#ef4444";
-  
-  // Ensure we have valid data for the graph
-  const seriesData = Array.isArray(coin.series) && coin.series.length > 0 
-    ? coin.series 
-    : [coin.price, coin.price, coin.price]; // Fallback to current price if no data
-  const data = seriesData.map((v, i) => ({ x: i, y: Number(v) || 0 }));
+function CryptoCard({
+  config,
+  data,
+  usdToPhp,
+  loading,
+  onTimeframeChange,
+  onSymbolChange,
+  availableCoins,
+}: {
+  config: CardConfig;
+  data?: CardData;
+  usdToPhp: number;
+  loading: boolean;
+  onTimeframeChange: (id: string, tf: Timeframe) => void;
+  onSymbolChange: (id: string, symbol: CoinSymbol) => void;
+  availableCoins: CoinMeta[];
+}) {
+  const meta = COIN_LIBRARY[config.symbol];
+  const price = data?.price ?? meta.seedPrice;
+  const changePct = data?.changePct ?? meta.seedChange;
+  const up = changePct >= 0;
+  const chartColor = meta.accent;
+  const seriesData =
+    Array.isArray(data?.series) && data.series.length > 0 ? data.series : meta.seedSeries;
+  const chartPoints = seriesData.map((v, i) => ({ x: i, y: Number(v) || 0 }));
 
-  const ICONS: Record<Coin["symbol"], StaticImageData> = {
-    BTC: btcIcon,
-    ETH: ethIcon,
-    SOL: solIcon,
-  };
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const pickerRef = useRef<HTMLDivElement | null>(null);
 
-  const style = {
-    BTC: {
-      chipBg: "bg-amber-500/25",
-      ring: "ring-amber-400/30",
-      corner: "from-amber-500/15 via-transparent to-transparent",
-      accent: "#f59e0b",
-    },
-    ETH: {
-      chipBg: "bg-emerald-500/25",
-      ring: "ring-emerald-400/30",
-      corner: "from-emerald-500/15 via-transparent to-transparent",
-      accent: "#10b981",
-    },
-    SOL: {
-      chipBg: "bg-fuchsia-500/25",
-      ring: "ring-fuchsia-400/30",
-      corner: "from-fuchsia-500/15 via-transparent to-transparent",
-      accent: "#a78bfa",
-    },
-  }[coin.symbol];
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [pickerOpen]);
+
+  const filteredCoins = useMemo(
+    () =>
+      availableCoins.filter((coin) =>
+        `${coin.name} ${coin.symbol}`.toLowerCase().includes(search.trim().toLowerCase())
+      ),
+    [availableCoins, search]
+  );
 
   return (
     <div className="rounded-2xl p-[1px] bg-gradient-to-br from-white/10 to-white/0">
       <div className="h-48 rounded-2xl bg-zinc-900/80 border border-white/5 p-4 relative overflow-hidden shadow-[0_20px_60px_-25px_rgba(0,0,0,0.55)]">
-        <div className={`pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br ${style.corner}`} />
+        <div className={`pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br ${meta.corner}`} />
 
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-xl grid place-items-center overflow-hidden ring-1 ${style.ring} ${style.chipBg}`}>
-              <Image src={ICONS[coin.symbol]} alt={`${coin.symbol} icon`} width={24} height={24} className="w-6 h-6 object-contain" priority />
+            <div className={`w-11 h-11 rounded-xl grid place-items-center overflow-hidden ring-1 ${meta.ring} ${meta.chipBg}`}>
+              {meta.icon ? (
+                <Image
+                  src={meta.icon}
+                  alt={`${config.symbol} icon`}
+                  width={24}
+                  height={24}
+                  className="w-6 h-6 object-contain"
+                  priority
+                />
+              ) : (
+                <span className="text-xs font-semibold text-white">{config.symbol}</span>
+              )}
             </div>
             <div className="text-[15px] font-semibold">
-              {coin.name} ({coin.symbol})
+              {meta.name} ({config.symbol})
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="relative flex flex-col items-end gap-2">
+            <button
+              onClick={() => setPickerOpen((prev) => !prev)}
+              className="w-8 h-8 grid place-items-center rounded-xl border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white transition"
+              aria-label="Change coin"
+            >
+              <SearchIcon className="w-3.5 h-3.5" />
+            </button>
+            {pickerOpen && (
+              <div
+                ref={pickerRef}
+                className="absolute right-0 top-10 z-20 w-60 rounded-xl border border-zinc-800 bg-zinc-950/95 p-3 shadow-xl space-y-2"
+              >
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search coin..."
+                  className="w-full rounded-lg bg-zinc-900/70 border border-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                />
+                <div className="max-h-48 overflow-y-auto pr-1 space-y-1">
+                  {filteredCoins.map((coin) => (
+                    <button
+                      key={coin.symbol}
+                      onClick={() => {
+                        onSymbolChange(config.id, coin.symbol);
+                        setPickerOpen(false);
+                        setSearch("");
+                      }}
+                      className={`w-full text-left px-2 py-1.5 rounded-lg text-sm flex items-center justify-between transition ${
+                        coin.symbol === config.symbol
+                          ? "bg-blue-500/10 text-blue-200"
+                          : "text-zinc-200 hover:bg-zinc-800/80"
+                      }`}
+                    >
+                      <span>{coin.name}</span>
+                      <span className="text-xs text-zinc-500">{coin.symbol}</span>
+                    </button>
+                  ))}
+                  {!filteredCoins.length && (
+                    <div className="text-xs text-zinc-500 px-2 py-1.5">No matches</div>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-1 bg-zinc-900/70 rounded-lg px-1.5 py-0.5 border border-zinc-800/70">
-              <button
-                onClick={() => onTimeframeChange("1")}
-                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
-                  timeframe === "1"
-                    ? "bg-blue-600/20 text-blue-300 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                1D
-              </button>
-              <button
-                onClick={() => onTimeframeChange("7")}
-                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
-                  timeframe === "7"
-                    ? "bg-blue-600/20 text-blue-300 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                7D
-              </button>
-              <button
-                onClick={() => onTimeframeChange("30")}
-                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
-                  timeframe === "30"
-                    ? "bg-blue-600/20 text-blue-300 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                1M
-              </button>
+              {(["1", "7", "30"] as Timeframe[]).map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => onTimeframeChange(config.id, tf)}
+                  className={`text-[10px] px-1.5 py-0.5 rounded transition ${
+                    config.timeframe === tf
+                      ? "bg-blue-600/20 text-blue-300 font-medium"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  {tf === "1" ? "1D" : tf === "7" ? "7D" : "1M"}
+                </button>
+              ))}
             </div>
-            <button className="text-zinc-500 leading-none" aria-label="More options">⋯</button>
           </div>
         </div>
 
         <div className="mt-3">
           <div className="text-[22px] font-bold leading-tight">
-            {coin.price.toLocaleString(undefined, {
+            {price.toLocaleString(undefined, {
               style: "currency",
               currency: "USD",
-              maximumFractionDigits: coin.price < 1 ? 4 : 2,
+              maximumFractionDigits: price < 1 ? 4 : 2,
             })}
             <span className="text-sm font-normal text-zinc-400 ml-2">
-              (₱{(coin.price * usdToPhp).toLocaleString(undefined, {
-                maximumFractionDigits: coin.price < 1 ? 4 : 2,
+              (₱{(price * usdToPhp).toLocaleString(undefined, {
+                maximumFractionDigits: price < 1 ? 4 : 2,
               })})
             </span>
           </div>
           <div className="mt-1 flex items-center gap-2 text-sm">
             <span className={`${up ? "text-emerald-300" : "text-rose-300"} font-semibold`}>
-              {up ? "+" : ""}{coin.changePct.toFixed(2)}%
+              {up ? "+" : ""}
+              {changePct.toFixed(2)}%
             </span>
             <span className="text-[11px] uppercase tracking-wide text-zinc-400">
-              {timeframe === "1" ? "24H trend" : timeframe === "7" ? "7D trend" : "30D trend"}
+              {config.timeframe === "1"
+                ? "24H trend"
+                : config.timeframe === "7"
+                ? "7D trend"
+                : "30D trend"}
             </span>
           </div>
         </div>
 
         <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-80 pointer-events-none">
           <svg width="64" height="24" viewBox="0 0 72 28" fill="none">
-            <path d="M2 14c6-14 12 14 18 0s12 14 18 0 12 14 18 0 12 14 16 0" stroke={style.accent} strokeWidth="3" strokeLinecap="round" fill="none" />
+            <path
+              d="M2 14c6-14 12 14 18 0s12 14 18 0 12 14 18 0 12 14 16 0"
+              stroke={meta.accent}
+              strokeWidth="3"
+              strokeLinecap="round"
+              fill="none"
+            />
           </svg>
         </div>
 
         <div className="absolute left-0 right-0 bottom-0 h-16">
-          {data.length > 0 ? (
+          {!loading && chartPoints.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart 
-                data={data} 
-                margin={{ left: 0, right: 0, top: 4, bottom: 0 }}
-              >
+              <AreaChart data={chartPoints} margin={{ left: 0, right: 0, top: 4, bottom: 0 }}>
                 <defs>
-                  <linearGradient id={`grad-${coin.symbol}-${timeframe}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={0.5} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0} />
+                  <linearGradient id={`grad-${config.id}-${config.timeframe}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <Area 
-                  type="monotone" 
-                  dataKey="y" 
-                  stroke={color} 
-                  strokeWidth={1.6} 
-                  fillOpacity={1} 
-                  fill={`url(#grad-${coin.symbol}-${timeframe})`}
+                <Area
+                  type="monotone"
+                  dataKey="y"
+                  stroke={chartColor}
+                  strokeWidth={1.6}
+                  fillOpacity={1}
+                  fill={`url(#grad-${config.id}-${config.timeframe})`}
                   dot={false}
                   isAnimationActive={false}
                 />
@@ -1252,6 +1450,15 @@ function CryptoCard({ coin, usdToPhp, timeframe, onTimeframeChange }: { coin: Co
         </div>
       </div>
     </div>
+  );
+}
+
+function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <circle cx="11" cy="11" r="6" />
+      <line x1="16.65" y1="16.65" x2="21" y2="21" />
+    </svg>
   );
 }
 
