@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 const COMMUNITIES = [
@@ -12,7 +12,7 @@ const COMMUNITIES = [
   "Aji Club",
 ];
 
-export default function CollabsPage() {
+function CollabsContent() {
   const [collabs, setCollabs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
@@ -177,7 +177,7 @@ export default function CollabsPage() {
                     <td className="px-4 py-2">
                       {c.winners ? (
                         <a 
-                          href={c.winners}  // Use the direct URL instead of getSheetUrl
+                          href={c.winners}
                           className="text-blue-400 hover:underline" 
                           target="_blank"
                           rel="noopener noreferrer"
@@ -457,5 +457,13 @@ export default function CollabsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CollabsPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-gray-100">Loading...</div>}>
+      <CollabsContent />
+    </Suspense>
   );
 }
