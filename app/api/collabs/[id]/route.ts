@@ -18,16 +18,21 @@ async function writeAll(rows: any[]) {
   await fs.writeFile(DATA_FILE, JSON.stringify(rows, null, 2), "utf8");
 }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+// Fixed type annotation for Next.js 15
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+export async function GET(_req: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
   const rows = await readAll();
   const row = rows.find((r: any) => r.id === id);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(row);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function PUT(req: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
   const payload = await req.json();
   const rows = await readAll();
   const idx = rows.findIndex((r: any) => r.id === id);
@@ -38,8 +43,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function DELETE(_req: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
   const rows = await readAll();
   const next = rows.filter((r: any) => r.id !== id);
   await writeAll(next);
