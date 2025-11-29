@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## WEB3 Manager
 
-## Getting Started
+Manage your WEB3 journey in one place – track whitelists, collabs, and market data with a clean dashboard.
 
-First, run the development server:
+### Features
+
+- **Whitelist tracker**: Syncs from a Google Sheet (`WHITELIST` tab) and shows:
+  - Project, chain, type (WL/OG/etc.), wallet, mint date/time, timezone, and price.
+  - Quick search, inline add/edit/delete, and a mini calendar of upcoming mints.
+- **Collab management**: Reads/writes to Google Sheet tabs (`COLLABS_ACTIVE` / `COLLABS_DONE`) with:
+  - Project, X/Twitter, community, spots, contacts, deadlines, GA links, winners links, and status.
+  - “Ongoing / Done” views and edit/delete controls.
+- **Crypto overview**:
+  - Three customizable cards (BTC/ETH/SOL by default) with live prices and sparkline charts.
+  - Per‑card timeframe switcher (1D / 7D / 1M) and coin picker (BTC, ETH, SOL, BNB, XRP, ADA, DOGE, AVAX, MATIC).
+  - USD + PHP conversion using a live FX rate.
+- **Daily inspiration**:
+  - Daily Bible verse and motivational quote section.
+- **Auth & layout**:
+  - Login page with hero carousel and per‑slide copy.
+  - Protected dashboard behind `/login` (Next.js app router + middleware).
+
+### Tech Stack
+
+- **Frontend**: Next.js App Router, React, TypeScript, Tailwind CSS, Recharts, `next/image`.
+- **Backend / APIs**:
+  - Google Sheets API (via `googleapis`) for whitelists and collabs.
+  - CoinMarketCap API for live prices.
+  - CryptoCompare API for historical price data.
+  - Public APIs for quotes/verses and FX rates.
+
+### Local Development
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create `.env.local` with at least:
+
+```bash
+GOOGLE_CLIENT_EMAIL=...
+GOOGLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
+COINMARKETCAP_API_KEY=...
+CRYPTOCOMPARE_API_KEY=...
+# any login secrets you use for /api/auth/login
+```
+
+3. Run the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open `http://localhost:3000` and log in via `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Deploying
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Recommended: deploy on **Vercel**.
+- Set the same environment variables in the Vercel project (Production + Preview).
+- Push to the tracked branch (e.g. `main`) and Vercel will build & deploy automatically.
