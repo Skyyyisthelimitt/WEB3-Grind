@@ -265,7 +265,6 @@ export default function CollabsPage() {
               setIsSubmitting(true);
               try {
                 const payload = { ...formData, tab };
-                console.log("Submitting collab:", payload);
                 const url = editingId ? `/api/collabs?id=${editingId}&tab=${tab}` : "/api/collabs";
                 const method = editingId ? "PUT" : "POST";
                 const res = await fetch(url, {
@@ -275,8 +274,6 @@ export default function CollabsPage() {
                   cache: "no-store",
                 });
                 const data = await res.json();
-                console.log("Response status:", res.status);
-                console.log("Response data:", JSON.stringify(data, null, 2));
                 if (!res.ok) {
                   const errorMsg = data.error || data.message || `Failed to ${editingId ? "update" : "add"} collab`;
                   console.error("API Error:", errorMsg);

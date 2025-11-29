@@ -55,9 +55,6 @@ export async function GET(req: Request) {
         dueAt: row[9] || '',
       }));
 
-    // Debug logging
-    console.log(`Fetched ${collabs.length} collabs for tab: ${tab}`);
-    
     return NextResponse.json({ collabs });
   } catch (error: any) {
     console.error("❌ Error fetching Google Sheet:", error);
@@ -113,12 +110,6 @@ export async function POST(req: Request) {
       requestBody: {
         values: [rowData],
       },
-    });
-
-    console.log("Update result:", {
-      updatedRange: updateResult.data.updatedRange,
-      updatedRows: updateResult.data.updatedRows,
-      updatedCells: updateResult.data.updatedCells,
     });
 
     return NextResponse.json({ 
