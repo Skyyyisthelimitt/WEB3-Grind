@@ -173,49 +173,65 @@ export default function DashboardPage() {
     let retryCount = 0;
     const maxRetries = 3;
     const retryDelay = 10_000; // 10 seconds
+
+    setLoadingCoins(true);
+
+    const fetchHistory = async (symbol: "BTC" | "ETH" | "SOL") => {
+      const res = await fetch(`/api/crypto-history?symbol=${symbol}&days=${cryptoTimeframe}`, {
+        cache: "no-store",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || `History fetch failed (${symbol})`);
+      }
+      return Array.isArray(body?.prices) ? body.prices : [];
+    };
+
     async function fetchCoinsWithRetry() {
       try {
         // Fetch current prices
-        const priceRes = await fetch('/api/crypto-prices');
+        const priceRes = await fetch("/api/crypto-prices");
         if (!priceRes.ok) throw new Error(`Price fetch failed: ${priceRes.status}`);
         const priceObj = await priceRes.json();
         const data = priceObj.data || {};
-        
+
         // Map: { BTC: { quote: { USD: { price, percent_change_24h } } }, ... }
-        const nowPrice = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.price ?? initialCoins.find(c => c.symbol === symbol)?.price);
-        const change24h = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.percent_change_24h ?? initialCoins.find(c => c.symbol === symbol)?.changePct);
-        
+        const nowPrice = (symbol: "BTC" | "ETH" | "SOL") =>
+          Number(data[symbol]?.quote?.USD?.price ?? initialCoins.find((c) => c.symbol === symbol)?.price);
+        const change24h = (symbol: "BTC" | "ETH" | "SOL") =>
+          Number(data[symbol]?.quote?.USD?.percent_change_24h ?? initialCoins.find((c) => c.symbol === symbol)?.changePct);
+
         // Fetch historical data for all coins in parallel
         const [btcHistory, ethHistory, solHistory] = await Promise.all([
-          fetch(`/api/crypto-history?symbol=BTC&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
-          fetch(`/api/crypto-history?symbol=ETH&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
-          fetch(`/api/crypto-history?symbol=SOL&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
+          fetchHistory("BTC"),
+          fetchHistory("ETH"),
+          fetchHistory("SOL"),
         ]);
-        
+
         const updated: Coin[] = [
           {
             symbol: "BTC" as const,
             name: "Bitcoin",
-            price: nowPrice('BTC'),
-            changePct: change24h('BTC'),
-            series: btcHistory.prices && btcHistory.prices.length > 0 ? btcHistory.prices : initialCoins[0].series,
+            price: nowPrice("BTC"),
+            changePct: change24h("BTC"),
+            series: btcHistory.length > 0 ? btcHistory : initialCoins[0].series,
           },
           {
             symbol: "ETH" as const,
             name: "Ethereum",
-            price: nowPrice('ETH'),
-            changePct: change24h('ETH'),
-            series: ethHistory.prices && ethHistory.prices.length > 0 ? ethHistory.prices : initialCoins[1].series,
+            price: nowPrice("ETH"),
+            changePct: change24h("ETH"),
+            series: ethHistory.length > 0 ? ethHistory : initialCoins[1].series,
           },
           {
             symbol: "SOL" as const,
             name: "Solana",
-            price: nowPrice('SOL'),
-            changePct: change24h('SOL'),
-            series: solHistory.prices && solHistory.prices.length > 0 ? solHistory.prices : initialCoins[2].series,
+            price: nowPrice("SOL"),
+            changePct: change24h("SOL"),
+            series: solHistory.length > 0 ? solHistory : initialCoins[2].series,
           },
         ];
-        
+
         if (alive) {
           setCoins(updated);
           setLoadingCoins(false);
@@ -1128,7 +1144,7 @@ function CryptoCard({ coin, usdToPhp, timeframe, onTimeframeChange }: { coin: Co
       <div className="h-48 rounded-2xl bg-zinc-900/80 border border-white/5 p-4 relative overflow-hidden shadow-[0_20px_60px_-25px_rgba(0,0,0,0.55)]">
         <div className={`pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br ${style.corner}`} />
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className={`w-11 h-11 rounded-xl grid place-items-center overflow-hidden ring-1 ${style.ring} ${style.chipBg}`}>
               <Image src={ICONS[coin.symbol]} alt={`${coin.symbol} icon`} width={24} height={24} className="w-6 h-6 object-contain" priority />
@@ -1137,27 +1153,8 @@ function CryptoCard({ coin, usdToPhp, timeframe, onTimeframeChange }: { coin: Co
               {coin.name} ({coin.symbol})
             </div>
           </div>
-          <div className="text-zinc-500">⋯</div>
-        </div>
-
-        <div className="mt-3">
-          <div className="text-[22px] font-bold leading-tight">
-            {coin.price.toLocaleString(undefined, {
-              style: "currency",
-              currency: "USD",
-              maximumFractionDigits: coin.price < 1 ? 4 : 2,
-            })}
-            <span className="text-sm font-normal text-zinc-400 ml-2">
-              (₱{(coin.price * usdToPhp).toLocaleString(undefined, {
-                maximumFractionDigits: coin.price < 1 ? 4 : 2,
-              })})
-            </span>
-          </div>
-          <div className="mt-1 flex items-center gap-2">
-            <span className={`${up ? "text-emerald-300" : "text-rose-300"} font-semibold`}>
-              {up ? "+" : ""}{coin.changePct.toFixed(2)}%
-            </span>
-            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg px-1.5 py-0.5 border border-zinc-700/50">
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-1 bg-zinc-900/70 rounded-lg px-1.5 py-0.5 border border-zinc-800/70">
               <button
                 onClick={() => onTimeframeChange("1")}
                 className={`text-[10px] px-1.5 py-0.5 rounded transition ${
@@ -1189,6 +1186,30 @@ function CryptoCard({ coin, usdToPhp, timeframe, onTimeframeChange }: { coin: Co
                 1M
               </button>
             </div>
+            <button className="text-zinc-500 leading-none" aria-label="More options">⋯</button>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="text-[22px] font-bold leading-tight">
+            {coin.price.toLocaleString(undefined, {
+              style: "currency",
+              currency: "USD",
+              maximumFractionDigits: coin.price < 1 ? 4 : 2,
+            })}
+            <span className="text-sm font-normal text-zinc-400 ml-2">
+              (₱{(coin.price * usdToPhp).toLocaleString(undefined, {
+                maximumFractionDigits: coin.price < 1 ? 4 : 2,
+              })})
+            </span>
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-sm">
+            <span className={`${up ? "text-emerald-300" : "text-rose-300"} font-semibold`}>
+              {up ? "+" : ""}{coin.changePct.toFixed(2)}%
+            </span>
+            <span className="text-[11px] uppercase tracking-wide text-zinc-400">
+              {timeframe === "1" ? "24H trend" : timeframe === "7" ? "7D trend" : "30D trend"}
+            </span>
           </div>
         </div>
 
