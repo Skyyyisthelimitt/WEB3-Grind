@@ -1,5 +1,5 @@
 // app/api/collabs/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 
@@ -18,14 +18,14 @@ async function writeAll(rows: any[]) {
   await fs.writeFile(DATA_FILE, JSON.stringify(rows, null, 2), "utf8");
 }
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const rows = await readAll();
   const row = rows.find((r: any) => r.id === params.id);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(row);
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const payload = await req.json();
   const rows = await readAll();
   const idx = rows.findIndex((r: any) => r.id === params.id);
@@ -36,7 +36,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json(updated);
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const rows = await readAll();
   const next = rows.filter((r: any) => r.id !== params.id);
   await writeAll(next);
