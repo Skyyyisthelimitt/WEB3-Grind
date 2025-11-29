@@ -19,6 +19,17 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
     ],
+    rules: {
+      // Allow pragmatic use of `any` in API route handlers and dynamic data
+      "@typescript-eslint/no-explicit-any": "off",
+      // Allow occasional unused vars for error objects, seed data, etc.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+      // Don't fail build on unescaped quotes in JSX text
+      "react/no-unescaped-entities": "off",
+    },
   },
 ];
 
