@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CryptoCard from "@/components/CryptoCard";
+import { CryptoCard } from "./CryptoCard";
 
 type Coin = {
   id: string;
@@ -74,10 +74,13 @@ export default function CryptoSection() {
       {coins.map((coin) => (
         <CryptoCard
           key={coin.id}
-          name={coin.name}
-          price={coin.price}
-          change={coin.changePct}
-          series={coin.series}
+          coin={{
+            symbol: coin.id.toUpperCase().slice(0, 3),
+            name: coin.name,
+            price: coin.price,
+            changePct: coin.changePct,
+            series: coin.series.map(s => s.value)
+          }}
         />
       ))}
     </section>
