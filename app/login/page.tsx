@@ -3,18 +3,26 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import login1 from "../images/login1.jpg";
+import login1 from "../images/login1.png";
 import login2 from "../images/login2.jpg";
 import login3 from "../images/login3.jpg";
-import login4 from "../images/login4.jpg";
-import login5 from "../images/login5.jpg";
 
-const loginImages = [
-  login1,
-  login2,
-  login3,
-  login4,
-  login5,
+const slides = [
+  {
+    image: login1,
+    title: "Manage your WEB3 Journey",
+    description: "Track your whitelists and collaborations all in one place",
+  },
+  {
+    image: login2,
+    title: "Effortlessly Track All Your Whitelist Spots",
+    description: "Stay organized with real-time updates, quick search, and mint date reminders.",
+  },
+  {
+    image: login3,
+    title: "Stay On Top of Every Collaboration",
+    description: "Clear deadlines. Clean tracking. Zero confusion.",
+  },
 ];
 
 export default function LoginPage() {
@@ -27,14 +35,15 @@ export default function LoginPage() {
 
   // Auto-slide carousel every 2 seconds
   useEffect(() => {
-    if (loginImages.length === 0) return;
+    if (slides.length === 0) return;
     
     const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % loginImages.length);
+      setCurrentImageIndex((prev) => (prev + 1) % slides.length);
     }, 2000);
 
     return () => clearInterval(interval);
   }, []);
+  const currentSlide = slides[currentImageIndex];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +185,7 @@ export default function LoginPage() {
             <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-zinc-900 via-black to-zinc-950 overflow-hidden">
               {/* Image Carousel */}
               <div className="absolute inset-0">
-                {loginImages.map((img, index) => (
+                {slides.map((slide, index) => (
                   <div
                     key={index}
                     className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -184,7 +193,7 @@ export default function LoginPage() {
                     }`}
                   >
                     <Image
-                      src={img}
+                      src={slide.image}
                       alt={`Login image ${index + 1}`}
                       fill
                       className="object-cover"
@@ -196,17 +205,14 @@ export default function LoginPage() {
               </div>
 
               {/* Content Overlay */}
-              <div className="relative z-10 flex flex-col justify-end h-full p-12">
+              <div className="relative z-10 flex flex-col h-full p-12 pt-10 gap-4">
                 <div className="max-w-md">
-                  <h2 className="text-4xl font-bold text-white mb-4">Manage your WEB3 Journey</h2>
-                  <p className="text-zinc-300 text-lg">
-                    Track your whitelists and collaborations all in one place
-                  </p>
+                  <h2 className="text-4xl font-bold text-white mb-3">{currentSlide.title}</h2>
+                  <p className="text-zinc-300 text-lg">{currentSlide.description}</p>
                 </div>
 
-                {/* Pagination Dots */}
-                <div className="flex gap-2 mt-8">
-                  {loginImages.map((_, index) => (
+                <div className="flex gap-2 mt-2">
+                  {slides.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
@@ -219,6 +225,8 @@ export default function LoginPage() {
                     />
                   ))}
                 </div>
+
+                <div className="mt-auto" />
               </div>
             </div>
           </div>
