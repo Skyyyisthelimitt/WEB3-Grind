@@ -2,15 +2,15 @@
   "name": "nft-wl-tracker",
   "version": "0.1.0",
   "private": true,
-  
- "scripts": {
-  "dev": "next dev",
-  "start": "next start",
-  "build": "next build",
-  "lint": "next lint"
-},
-
+  "scripts": {
+    "dev": "next dev",
+    "start": "next start",
+    "build": "next build",
+    "lint": "next lint"
+  },
   "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.87.0",
     "googleapis": "^159.0.0",
     "lucide-react": "^0.548.0",
     "next": "15.5.0",
