@@ -9,6 +9,7 @@ import login1 from "../images/login1.png";
 import login2 from "../images/login2.png";
 import login3 from "../images/login3.png";
 import login4 from "../images/login4.png";
+import logo from "../images/login-logo.png";
 
 const slides = [
   {
@@ -89,10 +90,14 @@ export default function LoginPage() {
               <div className="w-full max-w-sm">
               {/* Icon */}
               <div className="flex justify-center mb-8">
-                <div className="w-12 h-12 flex items-center justify-center">
-                  <svg className="w-15 h-13 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                  </svg>
+                <div className="relative w-40 h-24">
+                  <Image 
+                    src={logo} 
+                    alt="Logo" 
+                    fill 
+                    className="object-contain" 
+                    priority
+                  />
                 </div>
               </div>
 
@@ -229,7 +234,7 @@ export default function LoginPage() {
                       onClick={() => setCurrentImageIndex(index)}
                       className={`h-2 rounded-full transition-all ${
                         index === currentImageIndex
-                          ? "w-8 bg-blue-500"
+                          ? "w-8 bg-white"
                           : "w-2 bg-zinc-600 hover:bg-zinc-500"
                       }`}
                       aria-label={`Go to slide ${index + 1}`}
