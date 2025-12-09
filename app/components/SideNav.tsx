@@ -85,10 +85,10 @@ export default function SideNav() {
                   title="Collabs"
                   className={`w-full flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors text-base
                     ${activeRoot 
-                      ? "bg-blue-600/10 text-white" 
+                      ? "bg-zinc-800 text-white font-medium" 
                       : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                 >
-                  <Icon size={20} />
+                  <Icon size={20} className={activeRoot ? "text-white" : ""} />
                   {!collapsed && <span>Collabs</span>}
                 </button>
 
@@ -101,7 +101,7 @@ export default function SideNav() {
                         href="/collabs?tab=ongoing"
                         className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-[15px] transition-colors
                           ${activeRoot && tabParam === "ongoing"
-                            ? "border-l-2 border-blue-500 bg-blue-500/10 text-white pl-[14px]"
+                            ? "border-l-2 border-white bg-zinc-800 text-white pl-[14px]"
                             : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                       >
                         <Loader2 size={16} className={activeRoot && tabParam === "ongoing" ? "animate-spin" : ""} />
@@ -111,7 +111,7 @@ export default function SideNav() {
                         href="/collabs?tab=done"
                         className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-[15px] transition-colors
                           ${activeRoot && tabParam === "done"
-                            ? "border-l-2 border-blue-500 bg-blue-500/10 text-white pl-[14px]"
+                            ? "border-l-2 border-white bg-zinc-800 text-white pl-[14px]"
                             : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
                       >
                         <Check size={16} />
@@ -131,11 +131,11 @@ export default function SideNav() {
               href={href}
               title={label}
               className={`flex items-center gap-4 rounded-md px-4 py-3 transition-colors text-base
-                ${active 
-                  ? "bg-blue-600/10 text-white" 
+                  ${active 
+                  ? "bg-zinc-800 text-white font-medium" 
                   : "text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200"}`}
             >
-              <Icon size={20} />
+              <Icon size={20} className={active ? "text-white" : ""} />
               {!collapsed && <span>{label}</span>}
             </Link>
           );
