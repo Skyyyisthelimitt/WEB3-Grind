@@ -14,7 +14,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Image from "next/image";
-import khun from "../images/khun.jpg"; // Import the khun image
+import logo from "../images/8wb-logo.png"; // Import the 8wb logo
 
 export default function SideNav() {
   const pathname = usePathname();
@@ -49,24 +49,19 @@ export default function SideNav() {
         ${collapsed ? "w-20" : "w-64"}`} // Changed from w-72 to w-64
     >
       {/* Logo section */}
-      <div className="flex items-center justify-between px-4 py-5 border-b border-zinc-900/60"> {/* Reduced py-6 to py-5 */}
-        <div className="flex items-center gap-3"> {/* Reduced gap-4 to gap-3 */}
-          <div className={`relative flex items-center justify-center rounded-lg overflow-hidden
-              ${collapsed ? "w-11 h-11" : "w-12 h-12"}
-              ring-2 ring-blue-500/50 shadow-lg shadow-blue-500/20
-              before:absolute before:inset-0 before:z-10 before:rounded-lg
-              before:shadow-[inset_0_0_12px_rgba(59,130,246,0.3)]
-              after:absolute after:inset-0 after:z-20 after:rounded-lg
-              after:ring-1 after:ring-blue-500/20 after:ring-offset-2 after:ring-offset-black/40`}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-900/60"> {/* Reduced py-5 to py-3 */}
+        <div className="flex items-center gap-0">
+          <div className={`relative flex items-center justify-center rounded-lg
+              ${collapsed ? "w-11 h-11" : "w-16 h-16"}`}>
             <Image 
-              src={khun}
+              src={logo}
               alt="Logo"
               fill
-              className="object-cover"
+              className="object-contain" // object-contain centers the image within the container
               priority
             />
           </div>
-          {!collapsed && <div className="font-semibold text-base text-zinc-200">Skyisthelimitt</div>}
+          {!collapsed && <div className="font-bold text-lg text-zinc-100 whitespace-nowrap leading-none mb-1">WEB3 Manager</div>}
         </div>
 
         <button
@@ -79,7 +74,7 @@ export default function SideNav() {
       </div>
 
       {/* Navigation - slightly reduced padding */}
-      <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800">
+      <nav className="flex-1 px-3 py-2 space-y-2 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800">
         {links.map(({ href, label, icon: Icon }) => {
           if (label === "Collabs") {
             const activeRoot = pathname?.startsWith("/collabs");

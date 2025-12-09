@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ResponsiveContainer,
   PieChart,
@@ -18,6 +18,7 @@ import pfp from "./images/khun.jpg";
 import btcIcon from "./images/btc.png";
 import ethIcon from "./images/eth.png";
 import solIcon from "./images/sol.png";
+import EditProfileModal from "./components/EditProfileModal";
 
 /* ----------------------- Types ----------------------- */
 type Chain =
@@ -69,39 +70,9 @@ type Collab = {
   community?: string;
 };
 
-type Timeframe = "1" | "7" | "30";
-
-type CoinSymbol =
-  | "BTC"
-  | "ETH"
-  | "SOL"
-  | "BNB"
-  | "XRP"
-  | "ADA"
-  | "DOGE"
-  | "AVAX"
-  | "MATIC";
-
-type CoinMeta = {
-  symbol: CoinSymbol;
+type Coin = {
+  symbol: "BTC" | "ETH" | "SOL";
   name: string;
-  icon?: StaticImageData;
-  accent: string;
-  chipBg: string;
-  ring: string;
-  corner: string;
-  seedPrice: number;
-  seedChange: number;
-  seedSeries: number[];
-};
-
-type CardConfig = {
-  id: string;
-  symbol: CoinSymbol;
-  timeframe: Timeframe;
-};
-
-type CardData = {
   price: number;
   changePct: number;
   series: number[];
@@ -131,123 +102,34 @@ const CHAIN_ORDER: Chain[] = [
 ];
 
 /* --- Demo seed collabs --- */
-const _seedCollabs: Collab[] = [
+const seedCollabs: Collab[] = [
   { id: 1, project: "Melio", status: "Not Posted", dueAt: "2025-08-28" },
   { id: 2, project: "Mempoolio", status: "Posted", dueAt: "2025-08-30" },
 ];
 
-/* --- Coin palette & defaults --- */
-const COIN_LIBRARY: Record<CoinSymbol, CoinMeta> = {
-  BTC: {
+/* --- Initial coin seed (visible while first fetch resolves) --- */
+const initialCoins: Coin[] = [
+  {
     symbol: "BTC",
     name: "Bitcoin",
-    icon: btcIcon,
-    accent: "#f59e0b",
-    chipBg: "bg-amber-500/25",
-    ring: "ring-amber-400/30",
-    corner: "from-amber-500/20 via-transparent to-transparent",
-    seedPrice: 67250,
-    seedChange: 2.15,
-    seedSeries: [62, 64, 61, 63, 66, 65, 67, 66, 68, 69, 67, 68],
+    price: 67250,
+    changePct: 2.15,
+    series: [62, 64, 61, 63, 66, 65, 67, 66, 68, 69, 67, 68],
   },
-  ETH: {
+  {
     symbol: "ETH",
     name: "Ethereum",
-    icon: ethIcon,
-    accent: "#10b981",
-    chipBg: "bg-emerald-500/25",
-    ring: "ring-emerald-400/30",
-    corner: "from-emerald-500/20 via-transparent to-transparent",
-    seedPrice: 3450,
-    seedChange: 1.32,
-    seedSeries: [32, 33, 31, 32, 33, 34, 33, 35, 36, 35, 36, 37],
+    price: 3450,
+    changePct: 1.32,
+    series: [32, 33, 31, 32, 33, 34, 33, 35, 36, 35, 36, 37],
   },
-  SOL: {
+  {
     symbol: "SOL",
     name: "Solana",
-    icon: solIcon,
-    accent: "#a855f7",
-    chipBg: "bg-fuchsia-500/25",
-    ring: "ring-fuchsia-400/30",
-    corner: "from-fuchsia-500/20 via-transparent to-transparent",
-    seedPrice: 158.3,
-    seedChange: -0.84,
-    seedSeries: [14, 15, 15, 16, 15, 16, 17, 16, 16, 15, 16, 15],
+    price: 158.3,
+    changePct: -0.84,
+    series: [14, 15, 15, 16, 15, 16, 17, 16, 16, 15, 16, 15],
   },
-  BNB: {
-    symbol: "BNB",
-    name: "BNB",
-    accent: "#fcd34d",
-    chipBg: "bg-yellow-400/25",
-    ring: "ring-yellow-300/30",
-    corner: "from-yellow-400/20 via-transparent to-transparent",
-    seedPrice: 595,
-    seedChange: 0.85,
-    seedSeries: [560, 565, 570, 568, 572, 580, 585, 590, 592, 595, 593, 596],
-  },
-  XRP: {
-    symbol: "XRP",
-    name: "XRP",
-    accent: "#60a5fa",
-    chipBg: "bg-blue-400/20",
-    ring: "ring-blue-300/30",
-    corner: "from-blue-500/15 via-transparent to-transparent",
-    seedPrice: 0.62,
-    seedChange: -0.45,
-    seedSeries: [0.61, 0.6, 0.62, 0.63, 0.64, 0.63, 0.62, 0.63, 0.62, 0.61, 0.6],
-  },
-  ADA: {
-    symbol: "ADA",
-    name: "Cardano",
-    accent: "#38bdf8",
-    chipBg: "bg-sky-500/20",
-    ring: "ring-sky-300/30",
-    corner: "from-sky-500/15 via-transparent to-transparent",
-    seedPrice: 0.48,
-    seedChange: 1.2,
-    seedSeries: [0.44, 0.45, 0.46, 0.45, 0.47, 0.48, 0.49, 0.48, 0.47, 0.48],
-  },
-  DOGE: {
-    symbol: "DOGE",
-    name: "Dogecoin",
-    accent: "#fb923c",
-    chipBg: "bg-orange-400/20",
-    ring: "ring-orange-300/30",
-    corner: "from-orange-400/15 via-transparent to-transparent",
-    seedPrice: 0.21,
-    seedChange: -0.65,
-    seedSeries: [0.2, 0.19, 0.2, 0.205, 0.21, 0.215, 0.212, 0.21, 0.208, 0.207],
-  },
-  AVAX: {
-    symbol: "AVAX",
-    name: "Avalanche",
-    accent: "#fb7185",
-    chipBg: "bg-rose-400/25",
-    ring: "ring-rose-300/30",
-    corner: "from-rose-500/20 via-transparent to-transparent",
-    seedPrice: 48.6,
-    seedChange: 0.32,
-    seedSeries: [44, 45, 46, 47, 47.5, 48, 48.5, 49, 48.8, 48.6],
-  },
-  MATIC: {
-    symbol: "MATIC",
-    name: "Polygon",
-    accent: "#a855f7",
-    chipBg: "bg-purple-500/20",
-    ring: "ring-purple-300/30",
-    corner: "from-purple-500/15 via-transparent to-transparent",
-    seedPrice: 0.9,
-    seedChange: 0.5,
-    seedSeries: [0.82, 0.84, 0.85, 0.86, 0.88, 0.9, 0.89, 0.9, 0.91, 0.9],
-  },
-};
-
-const AVAILABLE_COINS = Object.values(COIN_LIBRARY);
-
-const DEFAULT_CARD_CONFIGS: CardConfig[] = [
-  { id: "card-btc", symbol: "BTC", timeframe: "7" },
-  { id: "card-eth", symbol: "ETH", timeframe: "7" },
-  { id: "card-sol", symbol: "SOL", timeframe: "7" },
 ];
 
 /* --------------------------- Page --------------------------- */
@@ -259,26 +141,41 @@ export default function DashboardPage() {
   const [loadingWL, setLoadingWL] = useState(true);
 
   // live coins
-  const [cardConfigs, setCardConfigs] = useState<CardConfig[]>(DEFAULT_CARD_CONFIGS);
-  const [cardData, setCardData] = useState<Record<string, CardData>>({});
+  const [coins, setCoins] = useState<Coin[]>(initialCoins);
   const [loadingCoins, setLoadingCoins] = useState(true);
   const [hoveredChain, setHoveredChain] = useState<Chain | null>(null);
   const [usdToPhp, setUsdToPhp] = useState<number>(55.5); // Default rate, will be updated
-  const fetchVersion = useRef(0);
+  const [cryptoTimeframe, setCryptoTimeframe] = useState<"1" | "7" | "30">("7");
 
-  const updateCardTimeframe = (id: string, timeframe: Timeframe) => {
-    setCardConfigs((prev) =>
-      prev.map((cfg) => (cfg.id === id ? { ...cfg, timeframe } : cfg))
-    );
+  // user profile
+  const [profile, setProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("/api/profile", { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        setProfile(json.profile);
+      }
+    } catch (e) {
+      console.error("Profile fetch error", e);
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
-  const updateCardSymbol = (id: string, symbol: CoinSymbol) => {
-    setCardConfigs((prev) =>
-      prev.map((cfg) =>
-        cfg.id === id ? { ...cfg, symbol } : cfg
-      )
-    );
-  };
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -301,94 +198,78 @@ export default function DashboardPage() {
     };
   }, []);
 
-  /* ------------------ coin fetching ------------------ */
+  /* ------------------ coin fetching (CoinGecko) ------------------ */
   useEffect(() => {
     let alive = true;
-    const currentVersion = ++fetchVersion.current;
-
-    const load = async () => {
-      if (!cardConfigs.length) return;
-      setLoadingCoins(true);
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 10_000; // 10 seconds
+    async function fetchCoinsWithRetry() {
       try {
-        const uniqueSymbols = Array.from(new Set(cardConfigs.map((cfg) => cfg.symbol)));
-        const symbolQuery = uniqueSymbols.join(",");
-        const priceRes = await fetch(`/api/crypto-prices?symbols=${symbolQuery}`, {
-          cache: "no-store",
-        });
-        const priceJson = await priceRes.json().catch(() => ({}));
-        const priceData = priceRes.ok ? priceJson.data || {} : {};
-        if (!priceRes.ok) {
-          console.warn("Price API fallback:", priceJson?.error || priceRes.statusText);
+        // Fetch current prices
+        const priceRes = await fetch('/api/crypto-prices');
+        if (!priceRes.ok) throw new Error(`Price fetch failed: ${priceRes.status}`);
+        const priceObj = await priceRes.json();
+        const data = priceObj.data || {};
+        
+        // Map: { BTC: { quote: { USD: { price, percent_change_24h } } }, ... }
+        const nowPrice = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.price ?? initialCoins.find(c => c.symbol === symbol)?.price);
+        const change24h = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.percent_change_24h ?? initialCoins.find(c => c.symbol === symbol)?.changePct);
+        
+        // Fetch historical data for all coins in parallel
+        const [btcHistory, ethHistory, solHistory] = await Promise.all([
+          fetch(`/api/crypto-history?symbol=BTC&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
+          fetch(`/api/crypto-history?symbol=ETH&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
+          fetch(`/api/crypto-history?symbol=SOL&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
+        ]);
+        
+        const updated: Coin[] = [
+          {
+            symbol: "BTC" as const,
+            name: "Bitcoin",
+            price: nowPrice('BTC'),
+            changePct: change24h('BTC'),
+            series: btcHistory.prices && btcHistory.prices.length > 0 ? btcHistory.prices : initialCoins[0].series,
+          },
+          {
+            symbol: "ETH" as const,
+            name: "Ethereum",
+            price: nowPrice('ETH'),
+            changePct: change24h('ETH'),
+            series: ethHistory.prices && ethHistory.prices.length > 0 ? ethHistory.prices : initialCoins[1].series,
+          },
+          {
+            symbol: "SOL" as const,
+            name: "Solana",
+            price: nowPrice('SOL'),
+            changePct: change24h('SOL'),
+            series: solHistory.prices && solHistory.prices.length > 0 ? solHistory.prices : initialCoins[2].series,
+          },
+        ];
+        
+        if (alive) {
+          setCoins(updated);
+          setLoadingCoins(false);
+          retryCount = 0;
         }
-
-        const uniqueHistoryPairs = Array.from(
-          cardConfigs.reduce(
-            (map, cfg) => {
-              const key = `${cfg.symbol}-${cfg.timeframe}`;
-              if (!map.has(key)) {
-                map.set(key, { key, symbol: cfg.symbol, timeframe: cfg.timeframe });
-              }
-              return map;
-            },
-            new Map<string, { key: string; symbol: CoinSymbol; timeframe: Timeframe }>()
-          ).values()
-        );
-
-        const historyResults = await Promise.all(
-          uniqueHistoryPairs.map(async ({ key, symbol, timeframe }) => {
-            try {
-              const res = await fetch(
-                `/api/crypto-history?symbol=${symbol}&days=${timeframe}`,
-                { cache: "no-store" }
-              );
-              const json = await res.json().catch(() => ({}));
-              if (!res.ok || !Array.isArray(json?.prices)) {
-                throw new Error(json?.error || `History fetch failed (${symbol})`);
-              }
-              return { key, series: json.prices as number[] };
-            } catch (err) {
-              console.warn("History API fallback:", key, err);
-              return { key, series: [] };
-            }
-          })
-        );
-
-        if (!alive || fetchVersion.current !== currentVersion) return;
-
-        const historyMap = new Map<string, number[]>();
-        historyResults.forEach((entry) => {
-          historyMap.set(entry.key, entry.series);
-        });
-
-        const nextData: Record<string, CardData> = {};
-        cardConfigs.forEach((cfg) => {
-          const meta = COIN_LIBRARY[cfg.symbol];
-          const cmcEntry = priceData?.[cfg.symbol];
-          const historyKey = `${cfg.symbol}-${cfg.timeframe}`;
-          const series = historyMap.get(historyKey);
-          nextData[cfg.id] = {
-            price: Number(cmcEntry?.quote?.USD?.price ?? meta.seedPrice),
-            changePct: Number(cmcEntry?.quote?.USD?.percent_change_24h ?? meta.seedChange),
-            series: series && series.length ? series : meta.seedSeries,
-          };
-        });
-
-        setCardData(nextData);
-        setLoadingCoins(false);
-      } catch (error) {
-        if (!alive || fetchVersion.current !== currentVersion) return;
-        console.error("Failed to load coin cards", error);
-        setLoadingCoins(false);
+      } catch (e) {
+        console.error("Failed to fetch coin data", e);
+        if (alive) {
+          setLoadingCoins(false);
+          if (retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(fetchCoinsWithRetry, retryDelay);
+          }
+        }
       }
-    };
-
-    load();
-    const interval = setInterval(load, 60_000);
+    }
+    fetchCoinsWithRetry();
+    const interval = setInterval(fetchCoinsWithRetry, 60_000); // refresh each minute
     return () => {
       alive = false;
       clearInterval(interval);
     };
-  }, [cardConfigs]);
+  }, [cryptoTimeframe]);
 
   // Fetch USD to PHP exchange rate
   useEffect(() => {
@@ -606,7 +487,7 @@ useEffect(() => {
       const day = date.getDate();
       const year = date.getFullYear();
       return `${month}-${day}-${year}`;
-    } catch {
+    } catch (error) {
       return dateStr; // Return original if parsing fails
     }
   };
@@ -714,9 +595,9 @@ useEffect(() => {
         {/* Left: Title */}
         <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">
-            WEB3 Manager{" "}
-            <span className="text-zinc-500 text-sm">@0xSkyisthelimit</span>
+             {greeting}, <span className="text-white">{profile?.username || "Guest"}</span>
           </h1>
+          <div className="text-zinc-500 text-sm">Welcome back to your dashboard.</div>
         </div>
         {/* Right: Search + Actions */}
         <div className="flex items-center gap-2 w-full xl:flex-1 justify-end">
@@ -725,19 +606,19 @@ useEffect(() => {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search whitelists or collabs…"
-              className="w-full rounded-xl bg-zinc-900/70 border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              className="w-full rounded-xl bg-zinc-900/70 border border-white/10 ring-1 ring-white/5 shadow shadow-black/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"></span>
           </div>
           <Link
             href="/whitelists"
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-zinc-800 text-white border border-white/10 ring-1 ring-white/5 shadow shadow-black/20 hover:bg-zinc-700 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
           >
             Add Whitelist
           </Link>
           <Link
             href="/collabs"
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
+            className="px-3 py-2 rounded-xl text-sm font-medium bg-zinc-800 text-white border border-white/10 ring-1 ring-white/5 shadow shadow-black/20 hover:bg-zinc-700 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
           >
             Add Collab
           </Link>
@@ -921,33 +802,23 @@ useEffect(() => {
           </Card>
 
           {/* Crypto cards (dynamic) */}
-          {cardConfigs.length ? (
-            cardConfigs.map((cfg) => (
-              <div key={cfg.id} className="md:row-start-3">
-                <CryptoCard
-                  config={cfg}
-                  data={cardData[cfg.id]}
-                  usdToPhp={usdToPhp}
-                  loading={loadingCoins && !cardData[cfg.id]}
-                  onTimeframeChange={updateCardTimeframe}
-                  onSymbolChange={updateCardSymbol}
-                  availableCoins={AVAILABLE_COINS}
-                />
-              </div>
-            ))
+          {coins.length > 0 ? (
+            <>
+              <div className="md:row-start-3"><CryptoCard coin={coins[0]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
+              <div className="md:row-start-3"><CryptoCard coin={coins[1]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
+              <div className="md:row-start-3"><CryptoCard coin={coins[2]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
+            </>
           ) : (
-            <div className="col-span-3 text-center text-zinc-500">No cards selected.</div>
+            <div className="col-span-3 text-center text-zinc-500">Loading prices…</div>
           )}
         </div>
 
         {/* RIGHT */}
         <div className="xl:col-span-1 space-y-5">
           <ProfileCard
-            imageSrc={pfp}
-            name="Skyyy"
-            x="0xSkyisthelimit"
-            discord="Skyisthelimitt"
-            role="Collab Manager"
+             profile={profile}
+             loading={profileLoading}
+             onEdit={() => setIsEditProfileOpen(true)}
           />
           <DailyBibleVerseCard />
           <Card title="Quotes" className="h-28">
@@ -1122,40 +993,63 @@ function statusTone(s: CollabStatus): "slate" | "violet" | "emerald" | "amber" |
 
 /* Profile card */
 function ProfileCard({
-  imageSrc = pfp,
-  name = "Skyyy",
-  x = "0xSkyisthelimit",
-  discord = "Skyisthelimitt",
-  role = "Founder & Collab Manager",
+  profile,
+  loading,
+  onEdit,
   className = "",
 }: {
-  imageSrc?: string | StaticImageData;
-  name?: string;
-  x?: string;
-  discord?: string;
-  role?: string;
+  profile: any;
+  loading: boolean;
+  onEdit: () => void;
   className?: string;
 }) {
+  if (loading) {
+     return <div className={`rounded-2xl bg-zinc-900/70 border border-zinc-800 p-5 h-[200px] animate-pulse ${className}`} />;
+  }
+
+  const { full_name, x_handle, discord_handle, role, avatar_url, username } = profile || {};
+  const displayName = full_name || username || "Guest";
+  const displayRole = role || "Member";
+
   return (
-    <div className={`rounded-2xl bg-zinc-900/70 border border-zinc-800 p-5 ${className}`}>
+    <div className={`rounded-2xl bg-zinc-900/70 border border-zinc-800 p-5 relative group ${className}`}>
+      <button 
+        onClick={onEdit}
+        className="absolute top-4 right-4 p-1.5 rounded-lg bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400 hover:text-white transition opacity-0 group-hover:opacity-100"
+        title="Edit Profile"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+      </button>
+
       <div className="flex items-center gap-5">
-        <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-2 border-blue-500/50 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/30">
-          <Image src={imageSrc} alt={name} fill className="object-cover" />
+        <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-2 border-white/10 ring-2 ring-white/5 shadow-lg shadow-black/20 shrink-0 bg-zinc-800">
+          <Image 
+             src={avatar_url || pfp} 
+             alt={displayName} 
+             fill 
+             className="object-cover" 
+          />
         </div>
-        <div className="min-w-0">
-          <div className="text-zinc-100 text-2xl md:text-[26px] font-semibold leading-tight tracking-tight">
-            {name}
+        <div className="min-w-0 flex-1">
+          <div className="text-zinc-100 text-2xl md:text-[26px] font-semibold leading-tight tracking-tight truncate">
+            {displayName}
           </div>
-          <div className="mt-1 text-sm md:text-[15px]">
-            <span className="font-semibold text-zinc-300">X:</span>{" "}
-            <span className="text-zinc-400">{x}</span>
-          </div>
-          <div className="text-sm md:text-[15px]">
-            <span className="font-semibold text-zinc-300">Discord:</span>{" "}
-            <span className="text-zinc-400">{discord}</span>
-          </div>
-          <div className="mt-1 text-sm md:text-[15px] font-semibold text-zinc-200">
-            {role}
+          <div className="grid gap-1 mt-2">
+            {x_handle && (
+                <div className="text-sm md:text-[15px] flex items-center gap-1.5 truncate">
+                    <span className="font-semibold text-zinc-300">X:</span>
+                    <span className="text-zinc-400 truncate">{x_handle}</span>
+                </div>
+            )}
+            {discord_handle && (
+                <div className="text-sm md:text-[15px] flex items-center gap-1.5 truncate">
+                    <span className="font-semibold text-zinc-300">Discord:</span>
+                    <span className="text-zinc-400 truncate">{discord_handle}</span>
+                </div>
+            )}
+            <div className="mt-1 text-sm md:text-[15px] font-semibold text-zinc-200 truncate">
+                {displayRole}
+            </div>
           </div>
         </div>
       </div>
@@ -1194,7 +1088,7 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
   }
   while (cells.length < 42) cells.push({ label: cells.length - (startWeekday + daysInMonth) + 1, muted: true });
 
-  const _upcoming = [...wls]
+  const upcoming = [...wls]
     .filter((w) => w.mintDate && new Date(w.mintDate) >= new Date())
     .sort((a, b) => (a.mintDate! > b.mintDate! ? 1 : -1))
     .slice(0, 3);
@@ -1227,9 +1121,9 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
               key={i}
               className={`h-7 rounded-md grid place-items-center text-[11px]
                 ${c.muted ? "text-zinc-600" : "text-zinc-200"}
-                ${isToday ? "text-blue-500" : ""}
+                ${isToday ? "text-white" : ""}
                 ${isToday
-                  ? "bg-blue-600/10 ring-1 ring-blue-500/30 border border-blue-500/20"
+                  ? "bg-zinc-800 ring-1 ring-white/20 border border-white/10"
                   : (isMint ? "bg-violet-500/20 border border-violet-500/30" : "bg-zinc-900/60 border border-zinc-800")}
               `}
             >
@@ -1244,199 +1138,138 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
 }
 
 /* --- Crypto card --- */
-function CryptoCard({
-  config,
-  data,
-  usdToPhp,
-  loading,
-  onTimeframeChange,
-  onSymbolChange,
-  availableCoins,
-}: {
-  config: CardConfig;
-  data?: CardData;
-  usdToPhp: number;
-  loading: boolean;
-  onTimeframeChange: (id: string, tf: Timeframe) => void;
-  onSymbolChange: (id: string, symbol: CoinSymbol) => void;
-  availableCoins: CoinMeta[];
-}) {
-  const meta = COIN_LIBRARY[config.symbol];
-  const price = data?.price ?? meta.seedPrice;
-  const changePct = data?.changePct ?? meta.seedChange;
-  const up = changePct >= 0;
-  const chartColor = meta.accent;
-  const seriesData =
-    Array.isArray(data?.series) && data.series.length > 0 ? data.series : meta.seedSeries;
-  const chartPoints = seriesData.map((v, i) => ({ x: i, y: Number(v) || 0 }));
+function CryptoCard({ coin, usdToPhp, timeframe, onTimeframeChange }: { coin: Coin; usdToPhp: number; timeframe: "1" | "7" | "30"; onTimeframeChange: (tf: "1" | "7" | "30") => void }) {
+  const up = coin.changePct >= 0;
+  const color = up ? "#22c55e" : "#ef4444";
+  
+  // Ensure we have valid data for the graph
+  const seriesData = Array.isArray(coin.series) && coin.series.length > 0 
+    ? coin.series 
+    : [coin.price, coin.price, coin.price]; // Fallback to current price if no data
+  const data = seriesData.map((v, i) => ({ x: i, y: Number(v) || 0 }));
 
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const pickerRef = useRef<HTMLDivElement | null>(null);
+  const ICONS: Record<Coin["symbol"], StaticImageData> = {
+    BTC: btcIcon,
+    ETH: ethIcon,
+    SOL: solIcon,
+  };
 
-  useEffect(() => {
-    if (!pickerOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [pickerOpen]);
-
-  const filteredCoins = useMemo(
-    () =>
-      availableCoins.filter((coin) =>
-        `${coin.name} ${coin.symbol}`.toLowerCase().includes(search.trim().toLowerCase())
-      ),
-    [availableCoins, search]
-  );
+  const style = {
+    BTC: {
+      chipBg: "bg-amber-500/25",
+      ring: "ring-amber-400/30",
+      corner: "from-amber-500/15 via-transparent to-transparent",
+      accent: "#f59e0b",
+    },
+    ETH: {
+      chipBg: "bg-emerald-500/25",
+      ring: "ring-emerald-400/30",
+      corner: "from-emerald-500/15 via-transparent to-transparent",
+      accent: "#10b981",
+    },
+    SOL: {
+      chipBg: "bg-fuchsia-500/25",
+      ring: "ring-fuchsia-400/30",
+      corner: "from-fuchsia-500/15 via-transparent to-transparent",
+      accent: "#a78bfa",
+    },
+  }[coin.symbol];
 
   return (
     <div className="rounded-2xl p-[1px] bg-gradient-to-br from-white/10 to-white/0">
       <div className="h-48 rounded-2xl bg-zinc-900/80 border border-white/5 p-4 relative overflow-hidden shadow-[0_20px_60px_-25px_rgba(0,0,0,0.55)]">
-        <div className={`pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br ${meta.corner}`} />
+        <div className={`pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br ${style.corner}`} />
 
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-xl grid place-items-center overflow-hidden ring-1 ${meta.ring} ${meta.chipBg}`}>
-              {meta.icon ? (
-                <Image
-                  src={meta.icon}
-                  alt={`${config.symbol} icon`}
-                  width={24}
-                  height={24}
-                  className="w-6 h-6 object-contain"
-                  priority
-                />
-              ) : (
-                <span className="text-xs font-semibold text-white">{config.symbol}</span>
-              )}
+            <div className={`w-11 h-11 rounded-xl grid place-items-center overflow-hidden ring-1 ${style.ring} ${style.chipBg}`}>
+              <Image src={ICONS[coin.symbol]} alt={`${coin.symbol} icon`} width={24} height={24} className="w-6 h-6 object-contain" priority />
             </div>
             <div className="text-[15px] font-semibold">
-              {meta.name} ({config.symbol})
+              {coin.name} ({coin.symbol})
             </div>
           </div>
-          <div className="relative flex flex-col items-end gap-2">
-            <button
-              onClick={() => setPickerOpen((prev) => !prev)}
-              className="w-8 h-8 grid place-items-center rounded-xl border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white transition"
-              aria-label="Change coin"
-            >
-              <SearchIcon className="w-3.5 h-3.5" />
-            </button>
-            {pickerOpen && (
-              <div
-                ref={pickerRef}
-                className="absolute right-0 top-10 z-20 w-60 rounded-xl border border-zinc-800 bg-zinc-950/95 p-3 shadow-xl space-y-2"
-              >
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search coin..."
-                  className="w-full rounded-lg bg-zinc-900/70 border border-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                />
-                <div className="max-h-48 overflow-y-auto pr-1 space-y-1">
-                  {filteredCoins.map((coin) => (
-                    <button
-                      key={coin.symbol}
-                      onClick={() => {
-                        onSymbolChange(config.id, coin.symbol);
-                        setPickerOpen(false);
-                        setSearch("");
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded-lg text-sm flex items-center justify-between transition ${
-                        coin.symbol === config.symbol
-                          ? "bg-blue-500/10 text-blue-200"
-                          : "text-zinc-200 hover:bg-zinc-800/80"
-                      }`}
-                    >
-                      <span>{coin.name}</span>
-                      <span className="text-xs text-zinc-500">{coin.symbol}</span>
-                    </button>
-                  ))}
-                  {!filteredCoins.length && (
-                    <div className="text-xs text-zinc-500 px-2 py-1.5">No matches</div>
-                  )}
-                </div>
-              </div>
-            )}
-            <div className="flex items-center gap-1 bg-zinc-900/70 rounded-lg px-1.5 py-0.5 border border-zinc-800/70">
-              {(["1", "7", "30"] as Timeframe[]).map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => onTimeframeChange(config.id, tf)}
-                  className={`text-[10px] px-1.5 py-0.5 rounded transition ${
-                    config.timeframe === tf
-                      ? "bg-blue-600/20 text-blue-300 font-medium"
-                      : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  {tf === "1" ? "1D" : tf === "7" ? "7D" : "1M"}
-                </button>
-              ))}
-            </div>
-          </div>
+          <div className="text-zinc-500">⋯</div>
         </div>
 
         <div className="mt-3">
           <div className="text-[22px] font-bold leading-tight">
-            {price.toLocaleString(undefined, {
+            {coin.price.toLocaleString(undefined, {
               style: "currency",
               currency: "USD",
-              maximumFractionDigits: price < 1 ? 4 : 2,
+              maximumFractionDigits: coin.price < 1 ? 4 : 2,
             })}
             <span className="text-sm font-normal text-zinc-400 ml-2">
-              (₱{(price * usdToPhp).toLocaleString(undefined, {
-                maximumFractionDigits: price < 1 ? 4 : 2,
+              (₱{(coin.price * usdToPhp).toLocaleString(undefined, {
+                maximumFractionDigits: coin.price < 1 ? 4 : 2,
               })})
             </span>
           </div>
-          <div className="mt-1 flex items-center gap-2 text-sm">
+          <div className="mt-1 flex items-center gap-2">
             <span className={`${up ? "text-emerald-300" : "text-rose-300"} font-semibold`}>
-              {up ? "+" : ""}
-              {changePct.toFixed(2)}%
+              {up ? "+" : ""}{coin.changePct.toFixed(2)}%
             </span>
-            <span className="text-[11px] uppercase tracking-wide text-zinc-400">
-              {config.timeframe === "1"
-                ? "24H trend"
-                : config.timeframe === "7"
-                ? "7D trend"
-                : "30D trend"}
-            </span>
+            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg px-1.5 py-0.5 border border-zinc-700/50">
+              <button
+                onClick={() => onTimeframeChange("1")}
+                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
+                  timeframe === "1"
+                    ? "bg-blue-600/20 text-blue-300 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                1D
+              </button>
+              <button
+                onClick={() => onTimeframeChange("7")}
+                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
+                  timeframe === "7"
+                    ? "bg-blue-600/20 text-blue-300 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                7D
+              </button>
+              <button
+                onClick={() => onTimeframeChange("30")}
+                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
+                  timeframe === "30"
+                    ? "bg-blue-600/20 text-blue-300 font-medium"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                1M
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-80 pointer-events-none">
           <svg width="64" height="24" viewBox="0 0 72 28" fill="none">
-            <path
-              d="M2 14c6-14 12 14 18 0s12 14 18 0 12 14 18 0 12 14 16 0"
-              stroke={meta.accent}
-              strokeWidth="3"
-              strokeLinecap="round"
-              fill="none"
-            />
+            <path d="M2 14c6-14 12 14 18 0s12 14 18 0 12 14 18 0 12 14 16 0" stroke={style.accent} strokeWidth="3" strokeLinecap="round" fill="none" />
           </svg>
         </div>
 
         <div className="absolute left-0 right-0 bottom-0 h-16">
-          {!loading && chartPoints.length > 0 ? (
+          {data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartPoints} margin={{ left: 0, right: 0, top: 4, bottom: 0 }}>
+              <AreaChart 
+                data={data} 
+                margin={{ left: 0, right: 0, top: 4, bottom: 0 }}
+              >
                 <defs>
-                  <linearGradient id={`grad-${config.id}-${config.timeframe}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.5} />
-                    <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+                  <linearGradient id={`grad-${coin.symbol}-${timeframe}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <Area
-                  type="monotone"
-                  dataKey="y"
-                  stroke={chartColor}
-                  strokeWidth={1.6}
-                  fillOpacity={1}
-                  fill={`url(#grad-${config.id}-${config.timeframe})`}
+                <Area 
+                  type="monotone" 
+                  dataKey="y" 
+                  stroke={color} 
+                  strokeWidth={1.6} 
+                  fillOpacity={1} 
+                  fill={`url(#grad-${coin.symbol}-${timeframe})`}
                   dot={false}
                   isAnimationActive={false}
                 />
@@ -1450,15 +1283,6 @@ function CryptoCard({
         </div>
       </div>
     </div>
-  );
-}
-
-function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-      <circle cx="11" cy="11" r="6" />
-      <line x1="16.65" y1="16.65" x2="21" y2="21" />
-    </svg>
   );
 }
 

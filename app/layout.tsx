@@ -6,9 +6,9 @@ export const metadata = {
   title: "WEB3 Manager",
   description: "Personal NFT WL & Collab manager",
   icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    icon: '/8wb-logo.png',
+    shortcut: '/8wb-logo.png',
+    apple: '/8wb-logo.png',
   },
 };
 
