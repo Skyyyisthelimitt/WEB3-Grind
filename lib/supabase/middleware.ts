@@ -1,6 +1,18 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Polyfill for Edge Runtime to fix "process.versions" error in Supabase client
+if (typeof process === 'undefined') {
+  (globalThis as any).process = { env: {} }
+}
+if (process && !process.versions) {
+  try {
+    (process as any).versions = { node: '18.15.0' }
+  } catch (e) {
+    // Ignore error if process is immutable
+  }
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
