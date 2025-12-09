@@ -9,6 +9,7 @@ import login1 from "../images/login1.png";
 import login2 from "../images/login2.png";
 import login3 from "../images/login3.png";
 import login4 from "../images/login4.png";
+import logo from "../images/login-logo.png";
 
 const slides = [
   {
@@ -94,19 +95,25 @@ export default function RegisterPage() {
         <div className="rounded-2xl overflow-hidden bg-zinc-900/80 backdrop-blur-sm">
           <div className="flex min-h-[600px]">
             {/* Left Section - Register Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
-              <div className="w-full max-w-sm">
-              {/* Icon */}
-              <div className="flex justify-center mb-8">
-                <div className="w-12 h-12 flex items-center justify-center">
-                  <svg className="w-15 h-13 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
+            <div className="relative w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
+              {/* Logo - Top Left */}
+              <div className="absolute top-8 left-8 lg:top-3 lg:left-4">
+                <div className="relative w-37 h-17">
+                  <Image 
+                    src={logo} 
+                    alt="Logo" 
+                    fill 
+                    className="object-contain object-left" 
+                    priority
+                  />
                 </div>
               </div>
 
+              <div className="w-full max-w-sm">
+              {/* Icon removed */}
+
               {/* Welcome Message */}
-              <div className="text-center mb-8">
+              <div className="text-center mb-8 mt-10">
                 <h1 className="text-3xl font-bold text-zinc-800 mb-2">Create an account</h1>
                 <p className="text-zinc-500 text-base">Enter your details to get started</p>
               </div>
@@ -228,7 +235,7 @@ export default function RegisterPage() {
                       onClick={() => setCurrentImageIndex(index)}
                       className={`h-2 rounded-full transition-all ${
                         index === currentImageIndex
-                          ? "w-8 bg-blue-500"
+                          ? "w-8 bg-white"
                           : "w-2 bg-zinc-600 hover:bg-zinc-500"
                       }`}
                       aria-label={`Go to slide ${index + 1}`}

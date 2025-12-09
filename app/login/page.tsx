@@ -86,23 +86,24 @@ export default function LoginPage() {
         <div className="rounded-2xl overflow-hidden bg-zinc-900/80 backdrop-blur-sm">
           <div className="flex min-h-[600px]">
             {/* Left Section - Login Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
-              <div className="w-full max-w-sm">
-              {/* Icon */}
-              <div className="flex justify-center mb-8">
-                <div className="relative w-40 h-24">
+            <div className="relative w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
+              {/* Logo - Top Left */}
+              <div className="absolute top-8 left-8 lg:top-3 lg:left-4">
+                <div className="relative w-37 h-17">
                   <Image 
                     src={logo} 
                     alt="Logo" 
                     fill 
-                    className="object-contain" 
+                    className="object-contain object-left" 
                     priority
                   />
                 </div>
               </div>
+              <div className="w-full max-w-sm">
+              {/* Icon removed */}
 
               {/* Welcome Message */}
-              <div className="text-center mb-10">
+              <div className="text-center mb-10 mt-10">
                 <h1 className="text-3xl font-bold text-zinc-800 mb-2">Welcome back!</h1>
                 <p className="text-zinc-500 text-base">Please enter your details</p>
               </div>
