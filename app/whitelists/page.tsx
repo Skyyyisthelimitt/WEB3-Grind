@@ -94,7 +94,7 @@ export default function WhitelistsPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search whitelists…"
-              className="w-full rounded-xl bg-zinc-900/70 border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              className="w-full rounded-xl bg-zinc-900/70 border border-white/20 ring-1 ring-white/10 shadow shadow-black/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"></span>
           </div>
@@ -104,7 +104,7 @@ export default function WhitelistsPage() {
               setEditingId(null);
               setIsModalOpen(true);
             }}
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
           >
             Add Whitelist
           </button>

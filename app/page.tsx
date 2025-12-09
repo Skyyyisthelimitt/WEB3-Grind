@@ -606,19 +606,19 @@ useEffect(() => {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search whitelists or collabs…"
-              className="w-full rounded-xl bg-zinc-900/70 border border-white/10 ring-1 ring-white/5 shadow shadow-black/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="w-full rounded-xl bg-zinc-900/70 border border-white/20 ring-1 ring-white/10 shadow shadow-black/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"></span>
           </div>
           <Link
             href="/whitelists"
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-zinc-800 text-white border border-white/10 ring-1 ring-white/5 shadow shadow-black/20 hover:bg-zinc-700 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
           >
             Add Whitelist
           </Link>
           <Link
             href="/collabs"
-            className="px-3 py-2 rounded-xl text-sm font-medium bg-zinc-800 text-white border border-white/10 ring-1 ring-white/5 shadow shadow-black/20 hover:bg-zinc-700 hover:text-white transition-transform active:scale-95 whitespace-nowrap shrink-0"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
           >
             Add Collab
           </Link>
