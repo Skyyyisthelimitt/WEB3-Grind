@@ -1,10 +1,17 @@
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 export async function POST() {
   try {
-    const cookieStore = await cookies();
-    cookieStore.delete("auth_session");
+    const supabase = await createClient();
+    
+    // Sign out from Supabase (this handles clearing the cookies properly)
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error("Supabase signOut error:", error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
