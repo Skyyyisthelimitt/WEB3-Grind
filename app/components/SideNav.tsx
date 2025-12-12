@@ -12,6 +12,8 @@ import {
   Loader2,
   Check,
   LogOut,
+  Coins,
+  PieChart,
 } from "lucide-react";
 import Image from "next/image";
 import logo from "../images/8wb-logo.png"; // Import the 8wb logo
@@ -39,6 +41,8 @@ export default function SideNav() {
 
   const links = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/crypto", label: "Crypto", icon: Coins },
+    { href: "/crypto/portfolio", label: "Portfolio", icon: PieChart },
     { href: "/whitelists", label: "Whitelists", icon: ClipboardList },
     { href: "/collabs", label: "Collabs", icon: Handshake },
   ];

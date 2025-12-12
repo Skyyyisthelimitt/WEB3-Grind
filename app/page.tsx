@@ -12,6 +12,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { Bell } from "lucide-react";
 
 // Local images (PNGs)
 import pfp from "./images/khun.jpg";
@@ -70,13 +71,7 @@ type Collab = {
   community?: string;
 };
 
-type Coin = {
-  symbol: "BTC" | "ETH" | "SOL";
-  name: string;
-  price: number;
-  changePct: number;
-  series: number[];
-};
+
 
 /* --- Chain color map --- */
 const CHAIN_COLORS: Record<Chain, string> = {
@@ -107,30 +102,7 @@ const seedCollabs: Collab[] = [
   { id: 2, project: "Mempoolio", status: "Posted", dueAt: "2025-08-30" },
 ];
 
-/* --- Initial coin seed (visible while first fetch resolves) --- */
-const initialCoins: Coin[] = [
-  {
-    symbol: "BTC",
-    name: "Bitcoin",
-    price: 67250,
-    changePct: 2.15,
-    series: [62, 64, 61, 63, 66, 65, 67, 66, 68, 69, 67, 68],
-  },
-  {
-    symbol: "ETH",
-    name: "Ethereum",
-    price: 3450,
-    changePct: 1.32,
-    series: [32, 33, 31, 32, 33, 34, 33, 35, 36, 35, 36, 37],
-  },
-  {
-    symbol: "SOL",
-    name: "Solana",
-    price: 158.3,
-    changePct: -0.84,
-    series: [14, 15, 15, 16, 15, 16, 17, 16, 16, 15, 16, 15],
-  },
-];
+
 
 /* --------------------------- Page --------------------------- */
 export default function DashboardPage() {
@@ -140,12 +112,7 @@ export default function DashboardPage() {
   const [wls, setWls] = useState<WL[]>([]);
   const [loadingWL, setLoadingWL] = useState(true);
 
-  // live coins
-  const [coins, setCoins] = useState<Coin[]>(initialCoins);
-  const [loadingCoins, setLoadingCoins] = useState(true);
   const [hoveredChain, setHoveredChain] = useState<Chain | null>(null);
-  const [usdToPhp, setUsdToPhp] = useState<number>(55.5); // Default rate, will be updated
-  const [cryptoTimeframe, setCryptoTimeframe] = useState<"1" | "7" | "30">("7");
 
   // user profile
   const [profile, setProfile] = useState<any>(null);
@@ -198,99 +165,7 @@ export default function DashboardPage() {
     };
   }, []);
 
-  /* ------------------ coin fetching (CoinGecko) ------------------ */
-  useEffect(() => {
-    let alive = true;
-    let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 10_000; // 10 seconds
-    async function fetchCoinsWithRetry() {
-      try {
-        // Fetch current prices
-        const priceRes = await fetch('/api/crypto-prices');
-        if (!priceRes.ok) throw new Error(`Price fetch failed: ${priceRes.status}`);
-        const priceObj = await priceRes.json();
-        const data = priceObj.data || {};
-        
-        // Map: { BTC: { quote: { USD: { price, percent_change_24h } } }, ... }
-        const nowPrice = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.price ?? initialCoins.find(c => c.symbol === symbol)?.price);
-        const change24h = (symbol: 'BTC'|'ETH'|'SOL') => Number(data[symbol]?.quote?.USD?.percent_change_24h ?? initialCoins.find(c => c.symbol === symbol)?.changePct);
-        
-        // Fetch historical data for all coins in parallel
-        const [btcHistory, ethHistory, solHistory] = await Promise.all([
-          fetch(`/api/crypto-history?symbol=BTC&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
-          fetch(`/api/crypto-history?symbol=ETH&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
-          fetch(`/api/crypto-history?symbol=SOL&days=${cryptoTimeframe}`).then(r => r.json()).catch(() => ({ prices: [] })),
-        ]);
-        
-        const updated: Coin[] = [
-          {
-            symbol: "BTC" as const,
-            name: "Bitcoin",
-            price: nowPrice('BTC'),
-            changePct: change24h('BTC'),
-            series: btcHistory.prices && btcHistory.prices.length > 0 ? btcHistory.prices : initialCoins[0].series,
-          },
-          {
-            symbol: "ETH" as const,
-            name: "Ethereum",
-            price: nowPrice('ETH'),
-            changePct: change24h('ETH'),
-            series: ethHistory.prices && ethHistory.prices.length > 0 ? ethHistory.prices : initialCoins[1].series,
-          },
-          {
-            symbol: "SOL" as const,
-            name: "Solana",
-            price: nowPrice('SOL'),
-            changePct: change24h('SOL'),
-            series: solHistory.prices && solHistory.prices.length > 0 ? solHistory.prices : initialCoins[2].series,
-          },
-        ];
-        
-        if (alive) {
-          setCoins(updated);
-          setLoadingCoins(false);
-          retryCount = 0;
-        }
-      } catch (e) {
-        console.error("Failed to fetch coin data", e);
-        if (alive) {
-          setLoadingCoins(false);
-          if (retryCount < maxRetries) {
-            retryCount++;
-            setTimeout(fetchCoinsWithRetry, retryDelay);
-          }
-        }
-      }
-    }
-    fetchCoinsWithRetry();
-    const interval = setInterval(fetchCoinsWithRetry, 60_000); // refresh each minute
-    return () => {
-      alive = false;
-      clearInterval(interval);
-    };
-  }, [cryptoTimeframe]);
 
-  // Fetch USD to PHP exchange rate
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        // Using exchangerate-api.com free tier
-        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-        if (alive && res.ok) {
-          const data = await res.json();
-          if (data.rates && data.rates.PHP) {
-            setUsdToPhp(data.rates.PHP);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch USD to PHP rate:", e);
-        // Keep default rate
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
 
 // at top of DashboardPage (client component)
 const [collabs, setCollabs] = useState<Collab[]>([]);
@@ -591,44 +466,51 @@ useEffect(() => {
   return (
     <div className="max-w-[1500px] mx-auto px-4 space-y-5 pb-10">
       {/* top bar */}
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+      <div className="flex items-center justify-between mb-2">
         {/* Left: Title */}
-        <div className="flex-1">
+        <div>
           <h1 className="text-2xl font-semibold tracking-tight">
              {greeting}, <span className="text-white">{profile?.username || "Guest"}</span>
           </h1>
           <div className="text-zinc-500 text-sm">Welcome back to your dashboard.</div>
         </div>
-        {/* Right: Search + Actions */}
-        <div className="flex items-center gap-2 w-full xl:flex-1 justify-end">
-          <div className="relative flex-1">
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search whitelists or collabs…"
-              className="w-full rounded-xl bg-zinc-900/70 border border-white/20 ring-1 ring-white/10 shadow shadow-black/20 px-3 py-2 pr-10 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60"></span>
-          </div>
+
+        {/* Right: Actions + Bell + Profile */}
+        <div className="flex items-center gap-3">
           <Link
             href="/whitelists"
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
           >
             Add Whitelist
           </Link>
           <Link
             href="/collabs"
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
           >
             Add Collab
           </Link>
+          <button className="p-2 rounded-xl bg-zinc-900/70 border border-white/10 hover:bg-zinc-800 transition-colors">
+            <Bell size={18} className="text-zinc-400" />
+          </button>
+          <button 
+            onClick={() => setIsEditProfileOpen(true)}
+            className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors"
+          >
+            <Image 
+              src={profile?.avatar || pfp} 
+              alt="Profile" 
+              width={40} 
+              height={40} 
+              className="w-full h-full object-cover"
+            />
+          </button>
         </div>
       </div>
 
       {/* main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mt-6">
         {/* LEFT */}
-        <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
           <KPICard
             title="Total Whitelists"
             value={totals.totalWL}
@@ -800,26 +682,11 @@ useEffect(() => {
               )}
             </ul>
           </Card>
-
-          {/* Crypto cards (dynamic) */}
-          {coins.length > 0 ? (
-            <>
-              <div className="md:row-start-3"><CryptoCard coin={coins[0]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
-              <div className="md:row-start-3"><CryptoCard coin={coins[1]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
-              <div className="md:row-start-3"><CryptoCard coin={coins[2]} usdToPhp={usdToPhp} timeframe={cryptoTimeframe} onTimeframeChange={setCryptoTimeframe} /></div>
-            </>
-          ) : (
-            <div className="col-span-3 text-center text-zinc-500">Loading prices…</div>
-          )}
         </div>
 
+
         {/* RIGHT */}
-        <div className="xl:col-span-1 space-y-5">
-          <ProfileCard
-             profile={profile}
-             loading={profileLoading}
-             onEdit={() => setIsEditProfileOpen(true)}
-          />
+        <div className="xl:col-span-1 space-y-6">
           <DailyBibleVerseCard />
           <Card title="Quotes" className="h-28">
             <div className="h-full flex flex-col items-center justify-center text-center px-3">
@@ -1133,155 +1000,6 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
         })}
       </div>
 
-    </div>
-  );
-}
-
-/* --- Crypto card --- */
-function CryptoCard({ coin, usdToPhp, timeframe, onTimeframeChange }: { coin: Coin; usdToPhp: number; timeframe: "1" | "7" | "30"; onTimeframeChange: (tf: "1" | "7" | "30") => void }) {
-  const up = coin.changePct >= 0;
-  const color = up ? "#22c55e" : "#ef4444";
-  
-  // Ensure we have valid data for the graph
-  const seriesData = Array.isArray(coin.series) && coin.series.length > 0 
-    ? coin.series 
-    : [coin.price, coin.price, coin.price]; // Fallback to current price if no data
-  const data = seriesData.map((v, i) => ({ x: i, y: Number(v) || 0 }));
-
-  const ICONS: Record<Coin["symbol"], StaticImageData> = {
-    BTC: btcIcon,
-    ETH: ethIcon,
-    SOL: solIcon,
-  };
-
-  const style = {
-    BTC: {
-      chipBg: "bg-amber-500/25",
-      ring: "ring-amber-400/30",
-      corner: "from-amber-500/15 via-transparent to-transparent",
-      accent: "#f59e0b",
-    },
-    ETH: {
-      chipBg: "bg-emerald-500/25",
-      ring: "ring-emerald-400/30",
-      corner: "from-emerald-500/15 via-transparent to-transparent",
-      accent: "#10b981",
-    },
-    SOL: {
-      chipBg: "bg-fuchsia-500/25",
-      ring: "ring-fuchsia-400/30",
-      corner: "from-fuchsia-500/15 via-transparent to-transparent",
-      accent: "#a78bfa",
-    },
-  }[coin.symbol];
-
-  return (
-    <div className="rounded-2xl p-[1px] bg-gradient-to-br from-white/10 to-white/0">
-      <div className="h-48 rounded-2xl bg-zinc-900/80 border border-white/5 p-4 relative overflow-hidden shadow-[0_20px_60px_-25px_rgba(0,0,0,0.55)]">
-        <div className={`pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br ${style.corner}`} />
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-xl grid place-items-center overflow-hidden ring-1 ${style.ring} ${style.chipBg}`}>
-              <Image src={ICONS[coin.symbol]} alt={`${coin.symbol} icon`} width={24} height={24} className="w-6 h-6 object-contain" priority />
-            </div>
-            <div className="text-[15px] font-semibold">
-              {coin.name} ({coin.symbol})
-            </div>
-          </div>
-          <div className="text-zinc-500">⋯</div>
-        </div>
-
-        <div className="mt-3">
-          <div className="text-[22px] font-bold leading-tight">
-            {coin.price.toLocaleString(undefined, {
-              style: "currency",
-              currency: "USD",
-              maximumFractionDigits: coin.price < 1 ? 4 : 2,
-            })}
-            <span className="text-sm font-normal text-zinc-400 ml-2">
-              (₱{(coin.price * usdToPhp).toLocaleString(undefined, {
-                maximumFractionDigits: coin.price < 1 ? 4 : 2,
-              })})
-            </span>
-          </div>
-          <div className="mt-1 flex items-center gap-2">
-            <span className={`${up ? "text-emerald-300" : "text-rose-300"} font-semibold`}>
-              {up ? "+" : ""}{coin.changePct.toFixed(2)}%
-            </span>
-            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg px-1.5 py-0.5 border border-zinc-700/50">
-              <button
-                onClick={() => onTimeframeChange("1")}
-                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
-                  timeframe === "1"
-                    ? "bg-blue-600/20 text-blue-300 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                1D
-              </button>
-              <button
-                onClick={() => onTimeframeChange("7")}
-                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
-                  timeframe === "7"
-                    ? "bg-blue-600/20 text-blue-300 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                7D
-              </button>
-              <button
-                onClick={() => onTimeframeChange("30")}
-                className={`text-[10px] px-1.5 py-0.5 rounded transition ${
-                  timeframe === "30"
-                    ? "bg-blue-600/20 text-blue-300 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                1M
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-80 pointer-events-none">
-          <svg width="64" height="24" viewBox="0 0 72 28" fill="none">
-            <path d="M2 14c6-14 12 14 18 0s12 14 18 0 12 14 18 0 12 14 16 0" stroke={style.accent} strokeWidth="3" strokeLinecap="round" fill="none" />
-          </svg>
-        </div>
-
-        <div className="absolute left-0 right-0 bottom-0 h-16">
-          {data.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart 
-                data={data} 
-                margin={{ left: 0, right: 0, top: 4, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id={`grad-${coin.symbol}-${timeframe}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={0.5} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area 
-                  type="monotone" 
-                  dataKey="y" 
-                  stroke={color} 
-                  strokeWidth={1.6} 
-                  fillOpacity={1} 
-                  fill={`url(#grad-${coin.symbol}-${timeframe})`}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xs">
-              Loading chart...
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
