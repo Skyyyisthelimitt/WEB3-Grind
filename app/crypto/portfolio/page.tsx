@@ -181,7 +181,7 @@ export default function PortfolioPage() {
           ) : (
             <button 
               onClick={() => setShowWalletModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium text-sm transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95"
             >
               <Wallet size={18} />
               Connect Wallet
@@ -259,7 +259,7 @@ export default function PortfolioPage() {
                 onClick={() => setTimeframe(tf)}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   timeframe === tf 
-                    ? "bg-orange-500 text-white" 
+                    ? "bg-zinc-100 text-zinc-900" 
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
@@ -320,7 +320,7 @@ export default function PortfolioPage() {
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   categoryFilter === cat 
-                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" 
+                    ? "bg-zinc-100 text-zinc-900 border border-zinc-300" 
                     : "text-zinc-400 hover:text-white border border-zinc-700/50"
                 }`}
               >

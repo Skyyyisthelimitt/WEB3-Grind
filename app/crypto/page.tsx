@@ -127,7 +127,7 @@ export default function CryptoPricesPage() {
           </button>
           <Link
             href="/crypto/portfolio"
-            className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium text-sm flex items-center gap-2 transition-colors"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
           >
             <Wallet size={18} />
             Portfolio
@@ -152,7 +152,7 @@ export default function CryptoPricesPage() {
           </div>
           <Link 
             href="/crypto/market"
-            className="px-4 py-2 rounded-lg border border-orange-500 text-orange-400 hover:bg-orange-500/10 text-sm font-medium transition-colors"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95"
           >
             View the market
           </Link>
@@ -190,7 +190,7 @@ export default function CryptoPricesPage() {
           onClick={() => setActiveTab("watchlist")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
             activeTab === "watchlist" 
-              ? "border-orange-500 text-orange-400 bg-orange-500/10" 
+              ? "border-zinc-300 text-zinc-900 bg-zinc-100" 
               : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
           }`}
         >
@@ -201,7 +201,7 @@ export default function CryptoPricesPage() {
           href="/crypto/portfolio"
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
             activeTab === "portfolio" 
-              ? "border-orange-500 text-orange-400 bg-orange-500/10" 
+              ? "border-zinc-300 text-zinc-900 bg-zinc-100" 
               : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
           }`}
         >
@@ -297,7 +297,7 @@ export default function CryptoPricesPage() {
                 onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                   currentPage === page 
-                    ? "bg-orange-500 text-white" 
+                    ? "bg-zinc-100 text-zinc-900" 
                     : "text-zinc-400 hover:bg-zinc-800"
                 }`}
               >
