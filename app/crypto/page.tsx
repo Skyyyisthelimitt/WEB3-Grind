@@ -118,7 +118,7 @@ export default function CryptoPricesPage() {
     <div className="max-w-[1400px] mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Prices</h1>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Prices</h1>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/60 border border-zinc-700/50 text-sm">
             <span className="text-lg">🇺🇸</span>
