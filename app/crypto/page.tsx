@@ -142,8 +142,8 @@ export default function CryptoPricesPage() {
       <div className="bg-zinc-900/40 rounded-2xl border border-zinc-800/60 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
-              <Star size={20} className="text-orange-400" />
+            <div className="w-10 h-10 rounded-xl bg-zinc-100/20 flex items-center justify-center">
+              <Star size={20} className="text-zinc-100" />
             </div>
             <div>
               <h2 className="text-white font-semibold">Follow your favorite coins</h2>
@@ -269,7 +269,7 @@ export default function CryptoPricesPage() {
                   >
                     <Star 
                       size={18} 
-                      className={favorites.includes(coin.id) ? "text-orange-400 fill-orange-400" : "text-zinc-500"} 
+                      className={favorites.includes(coin.id) ? "text-zinc-100 fill-zinc-100" : "text-zinc-500"} 
                     />
                   </button>
                 </td>
@@ -339,7 +339,7 @@ function FavoriteCryptoCard({ coin, onUnfavorite }: { coin: CryptoCoin; onUnfavo
             onClick={onUnfavorite}
             className="p-1 rounded hover:bg-zinc-700/50 transition-colors"
           >
-            <Star size={14} className="text-orange-400 fill-orange-400" />
+            <Star size={14} className="text-zinc-100 fill-zinc-100" />
           </button>
           <button className="text-zinc-500 hover:text-zinc-300">⋮</button>
         </div>
