@@ -407,7 +407,7 @@ export default function PortfolioPage() {
                 <button
                   key={wallet.id}
                   onClick={() => connectWallet(wallet.id)}
-                  className="w-full flex items-center gap-4 p-4 rounded-xl bg-zinc-800/60 border border-zinc-700/50 hover:border-orange-500/50 hover:bg-zinc-800 transition-all"
+                  className="w-full flex items-center gap-4 p-4 rounded-xl bg-zinc-800/60 border border-zinc-700/50 hover:border-zinc-500 hover:bg-zinc-800 transition-all"
                 >
                   <div className={`w-12 h-12 rounded-xl ${wallet.color} flex items-center justify-center text-2xl`}>
                     {wallet.icon}
