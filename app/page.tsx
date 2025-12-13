@@ -12,7 +12,21 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { Bell } from "lucide-react";
+import { 
+  Search01Icon, 
+  Notification03Icon, 
+  ChartAverageIcon, 
+  UserMultiple02Icon, 
+  Calendar03Icon,
+  QuoteDownIcon,
+  Book01Icon,
+  Agreement01Icon,
+  PieChartIcon,
+  AlarmClockIcon,
+  Calendar04Icon
+} from "hugeicons-react";
+
+
 
 // Local images (PNGs)
 import pfp from "./images/khun.jpg";
@@ -464,245 +478,293 @@ useEffect(() => {
   }, []);
 
   return (
-    <div className="max-w-[1500px] mx-auto px-4 space-y-5 pb-10">
-      {/* top bar */}
-      <div className="flex items-center justify-between mb-2">
-        {/* Left: Title */}
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-             {greeting}, <span className="text-white">{profile?.username || "Guest"}</span>
-          </h1>
-          <div className="text-zinc-500 text-sm">Welcome back to your dashboard.</div>
-        </div>
-
-        {/* Right: Actions + Bell + Profile */}
-        <div className="flex items-center gap-3">
-          <Link
-            href="/whitelists"
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
-          >
-            Add Whitelist
-          </Link>
-          <Link
-            href="/collabs"
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
-          >
-            Add Collab
-          </Link>
-          <button className="p-2 rounded-xl bg-zinc-900/70 border border-white/10 hover:bg-zinc-800 transition-colors">
-            <Bell size={18} className="text-zinc-400" />
-          </button>
-          <button 
-            onClick={() => setIsEditProfileOpen(true)}
-            className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors"
-          >
-            <Image 
-              src={profile?.avatar || pfp} 
-              alt="Profile" 
-              width={40} 
-              height={40} 
-              className="w-full h-full object-cover"
+    <div className="flex flex-col min-h-screen pb-10">
+      {/* Top Header - Sticky & Full Width */}
+      <div className="h-[88px] border-b border-zinc-900/60 bg-black/40 backdrop-blur-sm sticky top-0 z-30">
+        <div className="h-full w-full max-w-[1500px] mx-auto px-4 md:px-6 flex items-center justify-between">
+          {/* Left: Search */}
+          <div className="relative w-full max-w-sm">
+            <Search01Icon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search or type a command"
+              className="w-full pl-10 pr-12 py-2 rounded-xl bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
             />
-          </button>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-50">
+              <span className="text-[10px] font-medium text-zinc-400 bg-zinc-800/50 px-1.5 py-0.5 rounded border border-zinc-700/50">⌘ F</span>
+            </div>
+          </div>
+
+          {/* Right: Actions + Bell + Profile */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/whitelists"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+            >
+              Add Whitelist
+            </Link>
+            <Link
+              href="/collabs"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+            >
+              Add Collab
+            </Link>
+            <button className="p-2 rounded-xl bg-zinc-900/70 border border-white/10 hover:bg-zinc-800 transition-colors">
+              <Notification03Icon size={18} className="text-zinc-400" />
+            </button>
+            <button 
+              onClick={() => setIsEditProfileOpen(true)}
+              className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors"
+            >
+              <Image 
+                src={profile?.avatar || pfp} 
+                alt="Profile" 
+                width={40} 
+                height={40} 
+                className="w-full h-full object-cover"
+              />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mt-6">
-        {/* LEFT */}
-        <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <KPICard
-            title="Total Whitelists"
-            value={totals.totalWL}
-            icon="📈"
-            tone="violet"
-            className="h-28"
-          />
-          <KPICard
-            title="Total Collabs"
-            value={totals.totalCollabs}
-            icon="🤝"
-            tone="indigo"
-            className="h-28"
-          />
+      {/* Main Content Area */}
+      <div className="flex-1 w-full max-w-[1500px] mx-auto px-4 md:px-6 pt-6 space-y-6">
+        {/* Greeting Section */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+               {greeting}, <span className="text-white">{profile?.username || "Guest"}</span>
+            </h1>
+            <div className="text-zinc-500 text-sm">Welcome back to your dashboard.</div>
+          </div>
+        </div>
+
+        {/* main grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* LEFT */}
+          <div className="xl:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <KPICard
+              title="Total Collabs"
+              value={totals.totalCollabs}
+              icon={<UserMultiple02Icon size={24} />}
+              tone="indigo"
+              className="h-28"
+            />
+            <KPICard
+              title="Total Whitelists"
+              value={totals.totalWL}
+              icon={<ChartAverageIcon size={24} />}
+              tone="violet"
+              className="h-28"
+            />
           <KPICard
             title="Upcoming mints (7d)"
             value={upcoming7}
-            icon="🗓️"
+            icon={<Calendar03Icon size={24} />}
             tone="emerald"
             className="h-28"
           />
+            </div>
 
-          <Card title="WL Summary" className="h-[420px]">
-            <div className="flex h-full flex-col">
-              <div className="relative flex-1">
-                <div className="pointer-events-none absolute inset-x-6 inset-y-4 rounded-[32px] bg-gradient-to-b from-indigo-500/10 via-blue-500/5 to-transparent blur-3xl" />
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={70}
-                      outerRadius={120}
-                      paddingAngle={4}
-                      cornerRadius={12}
-                      stroke="#030712"
-                      strokeWidth={2}
-                      onMouseEnter={(_, index) =>
-                        setHoveredChain(pieChartData[index]?.name ?? null)
-                      }
-                      onMouseLeave={() => setHoveredChain(null)}
-                    >
-                      {pieChartData.map((slice) => (
-                        <Cell
-                          key={slice.name}
-                          fill={CHAIN_COLORS[slice.name]}
-                          opacity={
-                            hoveredChain && hoveredChain !== slice.name ? 0.45 : 1
-                          }
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      cursor={{ fill: "transparent" }}
-                      content={<ChainTooltip />}
-                      wrapperStyle={{ outline: "none", zIndex: 1000 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center z-0">
-                  <span className="text-[11px] uppercase tracking-[0.35em] text-zinc-500">
-                    WL Total
-                  </span>
-                  <span className="mt-1 text-3xl font-semibold text-white">
-                    {wls.length || 0}
-                  </span>
-                </div>
-              </div>
 
-              <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 px-5 py-3">
-                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-white/80">
-                  {CHAIN_ORDER.map((chain) => (
-                    <div key={chain} className="flex items-center gap-1.5">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: CHAIN_COLORS[chain] }}
-                      />
-                      <span className="font-semibold tracking-wide">{chain}</span>
-                    </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card 
+              title="Collabs — Action Required" 
+              className="h-[480px]" 
+              badgeCount={needsAction.length}
+              icon={<Agreement01Icon size={16} />}
+              tone="indigo"
+            >
+              <div className="flex flex-col h-full">
+                <ul className={`space-y-2 flex-1 ${showCollabPagination ? "overflow-y-auto pr-1" : ""}`}>
+                  {collabPageItems.map((c) => (
+                    <li key={c.id} className="flex items-center justify-between rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Pill tone={statusTone(c.status)}>{c.status}</Pill>
+                        <span className="text-zinc-200">
+                          {c.project}
+                          {c.community ? (
+                            <span className="text-xs text-zinc-400 ml-2">
+                              (
+                              {/^https?:\/\//i.test(c.community)
+                                ? (() => { try { const u = new URL(c.community); return (u.hostname || "").replace(/^www\./, ""); } catch { return "link"; } })()
+                                : c.community}
+                              )
+                            </span>
+                          ) : null}
+                        </span>
+                      </div>
+                      <span className="text-xs text-zinc-500">{c.dueAt || "-"}</span>
+                    </li>
                   ))}
+                  {!needsAction.length && <div className="text-zinc-500 text-sm mt-4 text-center">All set. No pending actions.</div>}
+                </ul>
+                <div className="mt-3 h-8 flex items-center justify-between text-xs text-zinc-400">
+                  {showCollabPagination && needsAction.length > collabPageSize ? (
+                    <>
+                      <button
+                        onClick={() => setCollabPage((p) => Math.max(0, p - 1))}
+                        disabled={collabPage === 0}
+                        className={`px-2 py-1 rounded-md border border-zinc-800 ${collabPage === 0 ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-800/40"}`}
+                      >
+                        Prev
+                      </button>
+                      <div>
+                        Page {collabPage + 1} / {collabTotalPages}
+                      </div>
+                      <button
+                        onClick={() => setCollabPage((p) => Math.min(collabTotalPages - 1, p + 1))}
+                        disabled={collabPage >= collabTotalPages - 1}
+                        className={`px-2 py-1 rounded-md border border-zinc-800 ${collabPage >= collabTotalPages - 1 ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-800/40"}`}
+                      >
+                        Next
+                      </button>
+                    </>
+                  ) : (
+                    <span />
+                  )}
                 </div>
-                {!pieSlices.length && (
-                  <p className="mt-3 text-center text-[11px] text-zinc-500">
-                    Add a whitelist entry to start populating the donut.
-                  </p>
-                )}
               </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card title="Collabs — Action Required" className="h-[420px]" badgeCount={needsAction.length}>
-            <div className="flex flex-col h-full">
-              <ul className={`space-y-2 flex-1 ${showCollabPagination ? "overflow-y-auto pr-1" : ""}`}>
-                {collabPageItems.map((c) => (
-                  <li key={c.id} className="flex items-center justify-between rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <Pill tone={statusTone(c.status)}>{c.status}</Pill>
-                      <span className="text-zinc-200">
-                        {c.project}
-                        {c.community ? (
-                          <span className="text-xs text-zinc-400 ml-2">
-                            (
-                            {/^https?:\/\//i.test(c.community)
-                              ? (() => { try { const u = new URL(c.community); return (u.hostname || "").replace(/^www\./, ""); } catch { return "link"; } })()
-                              : c.community}
-                            )
-                          </span>
-                        ) : null}
-                      </span>
-                    </div>
-                    <span className="text-xs text-zinc-500">{c.dueAt || "-"}</span>
-                  </li>
-                ))}
-                {!needsAction.length && <div className="text-zinc-500">All set.</div>}
-              </ul>
-              <div className="mt-3 h-8 flex items-center justify-between text-xs text-zinc-400">
-                {showCollabPagination && needsAction.length > collabPageSize ? (
-                  <>
-                    <button
-                      onClick={() => setCollabPage((p) => Math.max(0, p - 1))}
-                      disabled={collabPage === 0}
-                      className={`px-2 py-1 rounded-md border border-zinc-800 ${collabPage === 0 ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-800/40"}`}
+            <Card 
+              title="WL Summary" 
+              className="h-[480px]"
+              icon={<PieChartIcon size={16} />}
+              tone="violet"
+            >
+              <div className="flex h-full flex-col">
+                <div className="relative flex-1">
+                  <div className="pointer-events-none absolute inset-x-6 inset-y-4 rounded-[32px] bg-gradient-to-b from-indigo-500/10 via-blue-500/5 to-transparent blur-3xl" />
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={70}
+                        outerRadius={120}
+                        paddingAngle={4}
+                        cornerRadius={12}
+                        stroke="#030712"
+                        strokeWidth={2}
+                        onMouseEnter={(_, index) =>
+                          setHoveredChain(pieChartData[index]?.name ?? null)
+                        }
+                        onMouseLeave={() => setHoveredChain(null)}
+                      >
+                        {pieChartData.map((slice) => (
+                          <Cell
+                            key={slice.name}
+                            fill={CHAIN_COLORS[slice.name]}
+                            opacity={
+                              hoveredChain && hoveredChain !== slice.name ? 0.45 : 1
+                            }
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        cursor={{ fill: "transparent" }}
+                        content={<ChainTooltip />}
+                        wrapperStyle={{ outline: "none", zIndex: 1000 }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center z-0">
+                    <span className="text-[11px] uppercase tracking-[0.35em] text-zinc-500">
+                      WL Total
+                    </span>
+                    <span className="mt-1 text-3xl font-semibold text-white">
+                      {wls.length || 0}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 px-5 py-3">
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-white/80">
+                    {CHAIN_ORDER.map((chain) => (
+                      <div key={chain} className="flex items-center gap-1.5">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: CHAIN_COLORS[chain] }}
+                        />
+                        <span className="font-semibold tracking-wide">{chain}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {!pieSlices.length && (
+                    <p className="mt-3 text-center text-[11px] text-zinc-500">
+                      Add a whitelist entry to start populating the donut.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            <Card 
+              title="Upcoming Mints" 
+              className="h-[480px]"
+              icon={<AlarmClockIcon size={16} />}
+              tone="emerald"
+            >
+              <ul className="space-y-1.5">
+                {upcomingSchedules.length > 0 ? (
+                  upcomingSchedules.map((s) => (
+                    <li
+                      key={s.id}
+                      className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
                     >
-                      Prev
-                    </button>
-                    <div>
-                      Page {collabPage + 1} / {collabTotalPages}
-                    </div>
-                    <button
-                      onClick={() => setCollabPage((p) => Math.min(collabTotalPages - 1, p + 1))}
-                      disabled={collabPage >= collabTotalPages - 1}
-                      className={`px-2 py-1 rounded-md border border-zinc-800 ${collabPage >= collabTotalPages - 1 ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-800/40"}`}
-                    >
-                      Next
-                    </button>
-                  </>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-zinc-200 font-medium truncate">{s.project}</div>
+                        <div className="text-xs text-zinc-400 mt-0.5">{s.phase}</div>
+                      </div>
+                      <div className="text-right ml-2">
+                        {s.phTime && (
+                          <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
+                        )}
+                        <div className="text-xs text-zinc-500">{s.formattedDate}</div>
+                      </div>
+                    </li>
+                  ))
                 ) : (
-                  <span />
+                  <div className="text-zinc-500 text-sm py-4 text-center">
+                    {loadingWL ? "Loading…" : "No upcoming mints."}
+                  </div>
                 )}
-              </div>
-            </div>
-          </Card>
+              </ul>
+            </Card>
+          </div>
 
-          <Card title="Upcoming Mints" className="h-[420px]">
-            <ul className="space-y-1.5">
-              {upcomingSchedules.length > 0 ? (
-                upcomingSchedules.map((s) => (
-                  <li
-                    key={s.id}
-                    className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-zinc-200 font-medium truncate">{s.project}</div>
-                      <div className="text-xs text-zinc-400 mt-0.5">{s.phase}</div>
-                    </div>
-                    <div className="text-right ml-2">
-                      {s.phTime && (
-                        <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
-                      )}
-                      <div className="text-xs text-zinc-500">{s.formattedDate}</div>
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <div className="text-zinc-500 text-xs py-2">
-                  {loadingWL ? "Loading…" : "No upcoming mints."}
-                </div>
-              )}
-            </ul>
-          </Card>
         </div>
 
 
         {/* RIGHT */}
         <div className="xl:col-span-1 space-y-6">
           <DailyBibleVerseCard />
-          <Card title="Quotes" className="h-28">
+          <Card 
+            title="Quotes" 
+            className="h-33"
+            icon={<QuoteDownIcon size={18} />}
+            tone="sky"
+          >
             <div className="h-full flex flex-col items-center justify-center text-center px-3">
               {quoteLoading ? (
                 <div className="text-zinc-400 text-sm">Loading quote…</div>
               ) : dailyQuote ? (
                 <>
-                  <div className="text-zinc-100 italic text-[15px] leading-snug">
+                  <div className="text-zinc-100 italic text-sm leading-relaxed">
                     "{dailyQuote.text}"
                   </div>
                   {dailyQuote.author ? (
-                    <div className="mt-1 text-xs text-zinc-400">— {dailyQuote.author}</div>
+                    <div className="mt-2 text-xs text-zinc-400 font-medium">— {dailyQuote.author}</div>
                   ) : null}
                 </>
               ) : (
-                <div className="text-zinc-100 italic text-[15px] leading-snug">
+                <div className="text-zinc-100 italic text-sm leading-relaxed">
                   "Ship, learn, iterate."
                 </div>
               )}
@@ -711,6 +773,7 @@ useEffect(() => {
           <MiniCalendar wls={filteredWL} />
         </div>
       </div>
+    </div>
     </div>
   );
 }
@@ -772,24 +835,55 @@ function Card({
   title,
   children,
   badgeCount,
+  icon,
+  tone = "indigo",
   className = "",
 }: {
   title: string;
   children: ReactNode;
   badgeCount?: number;
+  icon?: ReactNode;
+  tone?: "violet" | "emerald" | "indigo" | "sky" | "amber" | "rose";
   className?: string;
 }) {
+  const ICON_STYLES = {
+    violet: "bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20 border border-white/10",
+    emerald: "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 border border-white/10",
+    indigo: "bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20 border border-white/10",
+    sky: "bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-sky-500/20 border border-white/10",
+    amber: "bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/20 border border-white/10",
+    rose: "bg-gradient-to-br from-pink-600 to-rose-600 shadow-lg shadow-pink-500/20 border border-white/10",
+  }[tone] || "bg-gradient-to-br from-blue-600 to-indigo-600 shadow-blue-500/20";
+
+  const BADGE_STYLES = {
+    violet: "bg-violet-600/20 text-violet-100 border border-violet-500/30 ring-1 ring-violet-500/30",
+    emerald: "bg-emerald-600/20 text-emerald-100 border border-emerald-500/30 ring-1 ring-emerald-500/30",
+    indigo: "bg-indigo-600/20 text-indigo-100 border border-indigo-500/30 ring-1 ring-indigo-500/30",
+    sky: "bg-sky-600/20 text-sky-100 border border-sky-500/30 ring-1 ring-sky-500/30",
+    amber: "bg-amber-600/20 text-amber-100 border border-amber-500/30 ring-1 ring-amber-500/30",
+    rose: "bg-rose-600/20 text-rose-100 border border-rose-500/30 ring-1 ring-rose-500/30",
+  }[tone] || "bg-indigo-600/20 text-indigo-100 border border-indigo-500/30 ring-1 ring-indigo-500/30";
+
   return (
-    <div className={`rounded-2xl bg-gradient-to-b from-zinc-950/60 to-zinc-900/60 border border-zinc-800 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)] p-4 ${className}`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-zinc-200 font-semibold text-sm">{title}</h3>
+    <div className={`rounded-2xl bg-gradient-to-b from-zinc-950/60 to-zinc-900/60 border border-zinc-800 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)] p-4 flex flex-col overflow-hidden ${className}`}>
+      <div className="flex items-center justify-between mb-3 shrink-0">
+        <div className="flex items-center gap-3">
+          {icon && (
+            <div className={`shrink-0 w-7 h-7 rounded-lg grid place-items-center text-white shadow-lg ${ICON_STYLES}`}>
+              <span className="flex items-center justify-center">{icon}</span>
+            </div>
+          )}
+          <h3 className="text-zinc-200 font-semibold text-base">{title}</h3>
+        </div>
         {typeof badgeCount === "number" && (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-600/20 text-white border border-blue-500/30 ring-1 ring-blue-500/30">
+          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${BADGE_STYLES}`}>
             {badgeCount}
           </span>
         )}
       </div>
-      <div className="h-[calc(100%-32px)]">{children}</div>
+      <div className="flex-1 min-h-0 relative">
+        {children}
+      </div>
     </div>
   );
 }
@@ -798,39 +892,35 @@ function KPICard({
   title,
   value,
   icon,
-  tone = "violet",
   className = "",
+  tone = "indigo",
 }: {
   title: string;
   value: number | string;
   icon?: ReactNode;
-  tone?: "violet" | "emerald" | "indigo" | "sky";
   className?: string;
+  tone?: "violet" | "emerald" | "indigo" | "sky";
 }) {
-  const TONES = {
-    violet: { border: "from-violet-500/40 via-fuchsia-500/20 to-transparent", icon: "from-violet-500 to-fuchsia-500", dot: "bg-violet-400" },
-    emerald: { border: "from-emerald-500/40 via-teal-500/20 to-transparent", icon: "from-emerald-500 to-teal-500", dot: "bg-emerald-400" },
-    indigo: { border: "from-indigo-500/40 via-purple-500/20 to-transparent", icon: "from-indigo-500 to-purple-500", dot: "bg-indigo-400" },
-    sky:     { border: "from-sky-500/40 via-cyan-500/20 to-transparent", icon: "from-sky-500 to-cyan-500", dot: "bg-sky-400" },
-  }[tone];
+  const ICON_STYLES = {
+    violet: "bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20 border border-white/10",
+    emerald: "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 border border-white/10",
+    indigo: "bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20 border border-white/10",
+    sky: "bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-sky-500/20 border border-white/10",
+  }[tone] || "bg-gradient-to-br from-blue-600 to-indigo-600 shadow-blue-500/20";
 
   return (
-    <div className={`relative rounded-2xl p-[1px] bg-gradient-to-br ${TONES.border} ${className}`}>
-      <div className="relative h-full rounded-2xl bg-zinc-900/70 border border-white/5 p-4 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.6)]">
-        <div className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:linear-gradient(to_bottom,white,transparent)] bg-gradient-to-b from-white/10 to-transparent" />
-        <div className="relative flex items-center gap-3 h-full">
-          <div className={`shrink-0 w-11 h-11 rounded-xl grid place-items-center text-white/90 ring-1 ring-black/20 shadow-lg bg-gradient-to-br ${TONES.icon}`}>
-            <span className="text-lg">{icon}</span>
+    <div className={`relative rounded-2xl border border-zinc-800 bg-zinc-900/40 ${className}`}>
+      <div className="relative h-full rounded-2xl p-4 flex items-center gap-4">
+        <div className={`shrink-0 w-12 h-12 rounded-xl grid place-items-center text-white shadow-lg ${ICON_STYLES}`}>
+          <span className="text-xl">{icon}</span>
+        </div>
+        <div>
+          <div className="text-xs md:text-sm tracking-wider uppercase text-zinc-500 font-semibold">
+            {title}
           </div>
-          <div className="flex-1">
-            <div className="text-[11px] md:text-xs tracking-widest leading-none uppercase text-zinc-400">
-              {title}
-            </div>
-            <div className="text-2xl md:text-3xl font-semibold mt-1 leading-tight">
-              {value}
-            </div>
+          <div className="text-2xl md:text-3xl font-bold text-zinc-100 mt-0.5">
+            {value}
           </div>
-          <span className={`hidden sm:block w-2 h-2 rounded-full ${TONES.dot}`} />
         </div>
       </div>
     </div>
@@ -879,7 +969,7 @@ function ProfileCard({
   const displayRole = role || "Member";
 
   return (
-    <div className={`rounded-2xl bg-zinc-900/70 border border-zinc-800 p-5 relative group ${className}`}>
+    <div className={`rounded-2xl bg-zinc-900/70 border border-zinc-800 p-4 relative group ${className}`}>
       <button 
         onClick={onEdit}
         className="absolute top-4 right-4 p-1.5 rounded-lg bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400 hover:text-white transition opacity-0 group-hover:opacity-100"
@@ -925,7 +1015,7 @@ function ProfileCard({
 }
 
 /* Calendar */
-function MiniCalendar({ wls }: { wls: WL[] }) {
+function MiniCalendar({ wls, className = "" }: { wls: WL[], className?: string }) {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -961,18 +1051,20 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
     .slice(0, 3);
 
   return (
-    <div className="rounded-2xl bg-zinc-900/70 border border-zinc-800 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <div className="text-zinc-200 font-semibold text-sm">Whitelist Calendar</div>
-          <div className="text-zinc-400 text-xs leading-none mt-0.5">{monthLabel}</div>
-        </div>
-        <div className="text-zinc-500 text-sm">⋯</div>
+    <Card 
+      title="Whitelist Calendar" 
+      icon={<Calendar04Icon size={18} />}
+      tone="rose"
+      className={className}
+    >
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="text-zinc-400 text-xs font-medium">{monthLabel}</div>
+        <div className="text-zinc-500 text-sm cursor-pointer hover:text-zinc-300">⋯</div>
       </div>
 
-      <div className="grid grid-cols-7 text-[10px] text-zinc-400 mb-1">
-        {["Sun","Mon","Tue","Wed","Thu","Fri","S                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          at"].map((d) => (
-          <div key={d} className="text-center py-0.5">{d}</div>
+      <div className="grid grid-cols-7 text-[10px] text-zinc-500 mb-2">
+        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
+          <div key={d} className="text-center font-medium">{d}</div>
         ))}
       </div>
 
@@ -984,14 +1076,13 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
             c.dateStr ===
               `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
           return (
-            <div                                                                                                                                                                                                                                                                                                                                                                                
+            <div
               key={i}
-              className={`h-7 rounded-md grid place-items-center text-[11px]
-                ${c.muted ? "text-zinc-600" : "text-zinc-200"}
-                ${isToday ? "text-white" : ""}
-                ${isToday
-                  ? "bg-zinc-800 ring-1 ring-white/20 border border-white/10"
-                  : (isMint ? "bg-violet-500/20 border border-violet-500/30" : "bg-zinc-900/60 border border-zinc-800")}
+              className={`h-7 rounded-md grid place-items-center text-[10px] font-medium transition-all
+                ${c.muted ? "text-zinc-700" : "text-zinc-300"}
+                ${isToday ? "text-white bg-zinc-800 ring-1 ring-white/20 shadow-lg shadow-black/50 z-10 scale-105" : ""}
+                ${!isToday && isMint ? "bg-violet-900/30 text-violet-200 border border-violet-500/20" : ""}
+                ${!isToday && !isMint && !c.muted ? "hover:bg-zinc-800/50" : ""}
               `}
             >
               {c.label}
@@ -999,8 +1090,7 @@ function MiniCalendar({ wls }: { wls: WL[] }) {
           );
         })}
       </div>
-
-    </div>
+    </Card>
   );
 }
 
@@ -1019,18 +1109,23 @@ function DailyBibleVerseCard() {
       });
   }, []);
   return (
-    <div className="rounded-2xl bg-zinc-900/70 border border-zinc-800 px-5 py-4 mb-4">
-      <div className="font-bold text-zinc-200 mb-1 text-[15px]">Daily Bible Verse</div>
-      {loading ? (
-        <div className="text-zinc-400 text-sm">Loading…</div>
-      ) : verse ? (
-        <>
-          <div className="text-zinc-100 italic text-[14px] mb-1 leading-snug">“{verse.text}”</div>
-          <div className="text-zinc-400 text-[11px] text-right">{verse.reference}</div>
-        </>
-      ) : (
-        <div className="text-zinc-400 text-sm">No verse for today.</div>
-      )}
-    </div>
+    <Card 
+      title="Daily Bible Verse" 
+      icon={<Book01Icon size={18} />} 
+      tone="amber"
+    >
+      <div className="flex flex-col justify-center h-full">
+        {loading ? (
+          <div className="text-zinc-400 text-sm">Loading…</div>
+        ) : verse ? (
+          <>
+            <div className="text-zinc-100 italic text-sm mb-2 leading-relaxed">“{verse.text}”</div>
+            <div className="text-zinc-400 text-xs text-right font-medium">{verse.reference}</div>
+          </>
+        ) : (
+          <div className="text-zinc-400 text-sm">No verse for today.</div>
+        )}
+      </div>
+    </Card>
   );
 }
