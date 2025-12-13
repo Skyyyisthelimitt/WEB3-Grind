@@ -115,7 +115,7 @@ export default function CryptoPricesPage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="flex-1 w-full max-w-[1500px] mx-auto px-4 md:px-6 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white tracking-tight">Prices</h1>
