@@ -3,12 +3,12 @@ import LayoutWrapper from "./components/LayoutWrapper";
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: "WEB3 Manager",
+  title: "Web3 Wizard",
   description: "Personal NFT WL & Collab manager",
   icons: {
-    icon: '/8wb-logo.png',
-    shortcut: '/8wb-logo.png',
-    apple: '/8wb-logo.png',
+    icon: '/tablogo.png',
+    shortcut: '/tablogo.png',
+    apple: '/tablogo.png',
   },
 };
 
