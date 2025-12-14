@@ -151,8 +151,7 @@ export default function WhitelistsPage() {
         r.type, 
         r.wallets,
         r.mintDate,
-        r.price?.toString(),
-        r.notes
+        r.price?.toString()
       ].map(v => (v || "").toString().toLowerCase()).join(" ");
       return text.includes(s);
     });
