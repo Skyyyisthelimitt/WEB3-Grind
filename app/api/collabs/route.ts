@@ -99,24 +99,25 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { project, twitter, community, spots, contact, teamSpots, status, dueAt, giveawayLink, winners } = body;
+    
+    // Construct update object dynamically to support partial updates
+    const updateData: any = {};
+    if (body.project !== undefined) updateData.project = body.project;
+    if (body.twitter !== undefined) updateData.twitter = body.twitter;
+    if (body.community !== undefined) updateData.community = body.community;
+    if (body.spots !== undefined) updateData.spots = body.spots;
+    if (body.contact !== undefined) updateData.contact = body.contact;
+    if (body.teamSpots !== undefined) updateData.team_spots = body.teamSpots;
+    if (body.giveawayLink !== undefined) updateData.giveaway_link = body.giveawayLink;
+    if (body.winners !== undefined) updateData.winners = body.winners;
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.dueAt !== undefined) updateData.due_at = body.dueAt;
 
     const supabase = await createClient();
 
     const { error } = await supabase
       .from("collabs")
-      .update({
-         project,
-         twitter,
-         community,
-         spots,
-         contact,
-         team_spots: teamSpots,
-         giveaway_link: giveawayLink,
-         winners,
-         status,
-         due_at: dueAt || null,
-      })
+      .update(updateData)
       .eq("id", id);
 
      if (error) throw error;
