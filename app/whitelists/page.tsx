@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-type Chain = "ETH" | "SOL" | "BTC" | "APE" | "BASE" | "ABS" | "Monad" | "HYPER";
+type Chain = "ETH" | "SOL" | "BTC" | "APE" | "BASE" | "ABS" | "MONAD" | "HYPER";
 type WLType = "GTD" | "FCFS" | "OG" | "WL";
 type WL = {
   id: number;
@@ -163,7 +163,7 @@ export default function WhitelistsPage() {
                         setEditingId(r.id);
                         setIsModalOpen(true);
                       }}
-                      className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition"
+                      className="px-2 py-1 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95"
                     >
                       Edit
                     </button>
@@ -173,7 +173,7 @@ export default function WhitelistsPage() {
                           handleDelete(r.id);
                         }
                       }}
-                      className="px-2 py-1 rounded-lg text-xs font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition"
+                      className="px-2 py-1 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95"
                     >
                       Delete
                     </button>
@@ -300,7 +300,7 @@ export default function WhitelistsPage() {
                   <option value="APE">APE</option>
                   <option value="BASE">BASE</option>
                   <option value="ABS">ABS</option>
-                  <option value="Monad">MONAD</option>
+                  <option value="MONAD">MONAD</option>
                   <option value="HYPER">HYPER</option>
                 </select>
               </div>
@@ -391,7 +391,7 @@ export default function WhitelistsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-blue-600/10 text-white border border-blue-500/20 ring-1 ring-blue-500/30 shadow shadow-blue-500/20 hover:bg-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (editingId ? "Updating..." : "Adding...") : (editingId ? "Update Whitelist" : "Add Whitelist")}
                 </button>
