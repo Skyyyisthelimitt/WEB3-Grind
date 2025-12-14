@@ -410,7 +410,26 @@ useEffect(() => {
 
   const needsAction = useMemo(() => {
     const normalize = (s: string = "") => s.toLowerCase().replace(/\s+/g, "").trim();
-    return collabs.filter((c) => normalize(c.status as any) === "notposted");
+    const now = new Date();
+    // Set 48 hours threshold
+    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000); 
+
+    return collabs.filter((c) => {
+      const s = normalize(c.status as any);
+      // Case 1: Not Posted
+      if (s === "notposted") return true;
+      // Case 2: Posted but deadline is soon (or passed)
+      if (s === "posted" && c.dueAt) {
+         const dueDate = new Date(c.dueAt);
+         // Check if date is valid and within range
+         return !isNaN(dueDate.getTime()) && dueDate <= in48h;
+      }
+      return false; 
+    }).sort((a, b) => {
+       const dateA = a.dueAt ? new Date(a.dueAt).getTime() : Infinity;
+       const dateB = b.dueAt ? new Date(b.dueAt).getTime() : Infinity;
+       return dateA - dateB;
+    });
   }, [collabs]);
 
   // pagination for Collabs — Action Required
@@ -570,10 +589,35 @@ useEffect(() => {
             >
               <div className="flex flex-col h-full">
                 <ul className={`space-y-2 flex-1 ${showCollabPagination ? "overflow-y-auto pr-1" : ""}`}>
-                  {collabPageItems.map((c) => (
+                  {collabPageItems.map((c) => {
+                    const isPosted = c.status === "Posted";
+                    let pillText: string = c.status;
+                    let pillTone = statusTone(c.status);
+                    let dateColor = "text-zinc-500";
+
+                    if (c.status === "Not Posted") {
+                      dateColor = "text-blue-400 font-medium";
+                    }
+
+                    if (isPosted && c.dueAt) {
+                      const due = new Date(c.dueAt);
+                      const now = new Date();
+                      // Check if overdue (deadline passed)
+                      if (due < now) {
+                        pillText = "Overdue";
+                        pillTone = "rose";
+                        dateColor = "text-rose-400 font-bold";
+                      } else {
+                        pillText = "Winners Due";
+                        pillTone = "amber";
+                        dateColor = "text-amber-400 font-medium";
+                      }
+                    }
+
+                    return (
                     <li key={c.id} className="flex items-center justify-between rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <Pill tone={statusTone(c.status)}>{c.status}</Pill>
+                         <Pill tone={pillTone as any}>{pillText}</Pill>
                         <span className="text-zinc-200">
                           {c.project}
                           {c.community ? (
@@ -587,9 +631,12 @@ useEffect(() => {
                           ) : null}
                         </span>
                       </div>
-                      <span className="text-xs text-zinc-500">{c.dueAt || "-"}</span>
+                      <span className={`text-xs ${dateColor}`}>
+                         {c.dueAt || "-"}
+                      </span>
                     </li>
-                  ))}
+                    );
+                  })}
                   {!needsAction.length && <div className="text-zinc-500 text-sm mt-4 text-center">All set. No pending actions.</div>}
                 </ul>
                 <div className="mt-3 h-8 flex items-center justify-between text-xs text-zinc-400">
@@ -916,22 +963,23 @@ function KPICard({
   );
 }
 
-function Pill({ children, tone = "slate" }:{ children: ReactNode; tone?: "slate"|"violet"|"emerald"|"amber"|"rose" }) {
+function Pill({ children, tone = "slate" }:{ children: ReactNode; tone?: "slate"|"violet"|"emerald"|"amber"|"rose"|"blue" }) {
   const tones: Record<string, string> = {
     slate: "bg-slate-800/40 text-slate-200 border border-slate-700/50",
     violet: "bg-violet-800/40 text-violet-200 border border-violet-700/50",
     emerald: "bg-emerald-800/40 text-emerald-200 border border-emerald-700/50",
     amber: "bg-amber-800/40 text-amber-200 border border-amber-700/50",
     rose: "bg-rose-800/40 text-rose-200 border border-rose-700/50",
+    blue: "bg-blue-600/40 text-blue-100 border border-blue-500/50",
   };
   return <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${tones[tone]}`}>{children}</span>;
 }
 
-function statusTone(s: CollabStatus): "slate" | "violet" | "emerald" | "amber" | "rose" {
+function statusTone(s: CollabStatus): "slate" | "violet" | "emerald" | "amber" | "rose" | "blue" {
   switch (s) {
     case "Submitted": return "emerald";
     case "Posted": return "violet";
-    case "Not Posted": return "amber";
+    case "Not Posted": return "blue";
     case "Cancel": return "rose";
     default: return "slate";
   }
