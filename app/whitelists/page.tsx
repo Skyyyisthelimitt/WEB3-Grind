@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search01Icon, Notification03Icon, Add01Icon, Delete01Icon, ArrowDown01Icon, Calendar01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react";
+import { Search01Icon, Notification03Icon, Add01Icon, Delete01Icon, ArrowDown01Icon, Calendar01Icon, ArrowLeft01Icon, ArrowRight01Icon, Link01Icon } from "hugeicons-react";
 import pfp from "../images/khun.jpg";
 
 type Chain = "ETH" | "SOL" | "BTC" | "APE" | "BASE" | "ABS" | "MONAD" | "HYPER";
@@ -32,7 +32,7 @@ const CHAIN_COLORS: Record<string, string> = {
   HYPER: "#14532d",
 };
 
-const WALLET_OPTIONS = ["Main", "2nd Wallet", "Alphabot Wallet", "HOC"];
+const DEFAULT_WALLETS = ["Main", "2nd Wallet", "Alphabot Wallet", "HOC"];
 const TIMEZONES = ["UTC", "EST", "PST", "CST", "JST", "SGT", "PH"];
 
 const getChainColor = (chain: string) => {
@@ -47,19 +47,36 @@ export default function WhitelistsPage() {
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Column Widths State
-  const [colWidths, setColWidths] = useState({
-    project: 200,
-    x: 150,
-    type: 100,
-    chain: 100,
-    wallets: 150,
-    mintDate: 150,
-    time: 160,
-    price: 100,
-  });
 
-  const handleResize = (col: keyof typeof colWidths, newWidth: number) => {
-    setColWidths(prev => ({ ...prev, [col]: newWidth }));
+
+  // Wallet State
+  const [wallets, setWallets] = useState<string[]>(DEFAULT_WALLETS);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('whitelist_wallets');
+    if (saved) {
+      try {
+        setWallets(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved wallets", e);
+      }
+    }
+  }, []);
+
+  const handleAddWallet = (newVal: string) => {
+    if (newVal && !wallets.includes(newVal)) {
+      const updated = [...wallets, newVal];
+      setWallets(updated);
+      localStorage.setItem('whitelist_wallets', JSON.stringify(updated));
+    }
+  };
+
+  const handleRemoveWallet = (val: string) => {
+    if (confirm(`Remove wallet "${val}"?`)) {
+      const updated = wallets.filter(v => v !== val);
+      setWallets(updated);
+      localStorage.setItem('whitelist_wallets', JSON.stringify(updated));
+    }
   };
 
   // Load initial data
@@ -203,14 +220,14 @@ export default function WhitelistsPage() {
         <table className="w-full text-sm" style={{ tableLayout: "fixed", minWidth: "1000px" }}>
           <thead className="bg-zinc-900/50 text-white">
             <tr>
-              <ResizableTh width={colWidths.project} onResize={(w) => handleResize("project", w)}>Project</ResizableTh>
-              <ResizableTh width={colWidths.x} onResize={(w) => handleResize("x", w)}>X</ResizableTh>
-              <ResizableTh width={colWidths.type} onResize={(w) => handleResize("type", w)}>Type</ResizableTh>
-              <ResizableTh width={colWidths.chain} onResize={(w) => handleResize("chain", w)}>Chain</ResizableTh>
-              <ResizableTh width={colWidths.wallets} onResize={(w) => handleResize("wallets", w)}>Wallet</ResizableTh>
-              <ResizableTh width={colWidths.mintDate} onResize={(w) => handleResize("mintDate", w)}>Mint Date</ResizableTh>
-              <ResizableTh width={colWidths.time} onResize={(w) => handleResize("time", w)}>Time</ResizableTh>
-              <ResizableTh width={colWidths.price} onResize={(w) => handleResize("price", w)}>Price</ResizableTh>
+              <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[190px]">Project</th>
+              <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[220px]">X</th>
+              <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[90px]">Type</th>
+              <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[90px]">Chain</th>
+              <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[160px]">Wallet</th>
+              <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[140px]">Mint Date</th>
+              <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[160px]">Time</th>
+              <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[100px]">Price</th>
               <th className="w-[60px] bg-zinc-900/50 border-zinc-800"></th>
             </tr>
           </thead>
@@ -231,12 +248,24 @@ export default function WhitelistsPage() {
                     />
                   </Td>
                   <Td>
-                    <input 
-                       value={r.x || ""} 
-                       onChange={(e) => updateRow(r.id, { x: e.target.value })}
-                       placeholder="https://x.com/..."
-                       className="w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-zinc-400 text-sm text-center placeholder-zinc-800"
-                    />
+                    <div className="flex items-center gap-1 group/cell text-center justify-center">
+                     <input 
+                        value={r.x || ""} 
+                        onChange={(e) => updateRow(r.id, { x: e.target.value })}
+                        placeholder="https://x.com/..."
+                        className="w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-zinc-400 text-sm text-center placeholder-zinc-800"
+                     />
+                     {r.x && (
+                       <a 
+                         href={r.x.startsWith('http') ? r.x : `https://x.com/${r.x.replace('x.com/','')}`} 
+                         target="_blank" 
+                         rel="noopener noreferrer"
+                         className="p-1 hover:text-blue-400 text-white transition-all flex-shrink-0"
+                       >
+                         <Link01Icon size={14} />
+                       </a>
+                     )}
+                    </div>
                   </Td>
                   <Td>
                      <DarkDropdown 
@@ -270,8 +299,10 @@ export default function WhitelistsPage() {
                   <Td>
                      <DarkDropdown 
                        value={r.wallets || "Main"}
-                       options={WALLET_OPTIONS}
+                       options={wallets}
                        onChange={(val: any) => updateRow(r.id, { wallets: val })}
+                       onAdd={handleAddWallet}
+                       onDelete={handleRemoveWallet}
                      />
                   </Td>
                   <Td>
@@ -308,15 +339,13 @@ export default function WhitelistsPage() {
                 </tr>
               ))
             )}
+            <tr className="border-t border-zinc-900/50 hover:bg-zinc-900/20 cursor-pointer transition-colors" onClick={createRow}>
+               <td colSpan={9} className="py-3 text-center text-zinc-500 hover:text-zinc-300 text-xs font-medium uppercase tracking-wider">
+                  + New Whitelist
+               </td>
+            </tr>
           </tbody>
         </table>
-        <button 
-          onClick={createRow}
-          className="w-full py-3 px-4 flex items-center gap-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/30 transition-colors border-t border-zinc-800 text-sm font-medium"
-        >
-          <Add01Icon size={16} />
-          <span>New Whitelist</span>
-        </button>
       </div>
       </div>
     </div>
@@ -367,19 +396,20 @@ function Td({ children, className="" }: { children: React.ReactNode; className?:
   return <td className={`px-2 py-3 text-center border-r border-zinc-800 last:border-r-0 border-t border-zinc-900 ${className} overflow-hidden`}>{children}</td>;
 }
 
-function DarkDropdown({ value, options, onChange, renderValue, renderOption }: any) {
+function DarkDropdown({ value, options, onChange, renderValue, renderOption, onAdd, onDelete }: any) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
-
-  // Update coords when opening or scrolling
+  const [isAdding, setIsAdding] = useState(false);
+  const [newOption, setNewOption] = useState("");
+  
   useEffect(() => {
     const updatePosition = () => {
       if (open && buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect();
         setCoords({
-          top: rect.bottom + 2, // slight gap
-          left: rect.left,
+          top: rect.bottom + 2,
+          left: rect.left + (rect.width / 2), // Center point
           width: rect.width
         });
       }
@@ -389,12 +419,24 @@ function DarkDropdown({ value, options, onChange, renderValue, renderOption }: a
       updatePosition();
       window.addEventListener("scroll", updatePosition, true);
       window.addEventListener("resize", updatePosition);
+    } else {
+      setIsAdding(false);
+      setNewOption("");
     }
     return () => {
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
     };
   }, [open]);
+
+  const handleAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newOption.trim() && onAdd) {
+      onAdd(newOption.trim());
+      setNewOption("");
+      setIsAdding(false);
+    }
+  };
 
   return (
     <>
@@ -411,24 +453,60 @@ function DarkDropdown({ value, options, onChange, renderValue, renderOption }: a
       {open && (
         <div className="fixed inset-0 z-[9999]" onClick={() => setOpen(false)}>
           <div 
-            className="absolute bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl py-1 overflow-y-auto max-h-[300px]"
+            className="absolute bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl py-1 max-h-[300px] flex flex-col overflow-hidden"
             style={{ 
               top: coords.top, 
               left: coords.left, 
-              width: Math.max(coords.width, 120), // Min width
+              transform: 'translateX(-50%)', // Centered
+              minWidth: onAdd ? "160px" : Math.max(coords.width, 100) + "px",
+              maxWidth: "240px",
               zIndex: 10000 
             }}
-            onClick={(e) => e.stopPropagation()} // Prevent backdrop click
+            onClick={(e) => e.stopPropagation()}
           >
-            {options.map((opt: string) => (
-              <div 
-                key={opt} 
-                onClick={() => { onChange(opt); setOpen(false); }} 
-                className="px-3 py-2 hover:bg-zinc-800 cursor-pointer text-xs text-zinc-300 font-medium transition-colors text-center"
-              >
-                {renderOption ? renderOption(opt) : opt}
-              </div>
-            ))}
+            <div className="overflow-y-auto flex-1 scrollbar-thin">
+              {options.map((opt: string) => (
+                <div 
+                  key={opt} 
+                  className="group px-3 py-2 hover:bg-zinc-800 cursor-pointer text-xs text-zinc-300 font-medium transition-colors flex items-center justify-between"
+                  onClick={() => { onChange(opt); setOpen(false); }}
+                >
+                  <span className="truncate flex-1 text-center">{renderOption ? renderOption(opt) : opt}</span>
+                  {onDelete && (
+                     <button 
+                       onClick={(e) => { e.stopPropagation(); onDelete(opt); }}
+                       className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 p-1 ml-2 transition-opacity"
+                     >
+                       <Delete01Icon size={12} />
+                     </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {onAdd && (
+               <div className="border-t border-zinc-800 p-2 bg-zinc-900/50">
+                 {isAdding ? (
+                    <form onSubmit={handleAddSubmit} className="flex gap-1">
+                       <input 
+                         autoFocus
+                         value={newOption}
+                         onChange={(e) => setNewOption(e.target.value)}
+                         className="flex-1 bg-zinc-800 text-white text-xs px-2 py-1 rounded border border-zinc-700 outline-none"
+                         placeholder="Name..."
+                       />
+                       <button type="submit" className="text-blue-400 p-1 hover:text-white"><Add01Icon size={14} /></button>
+                    </form>
+                 ) : (
+                    <button 
+                      onClick={() => setIsAdding(true)}
+                      className="w-full flex items-center justify-center gap-1 text-xs text-blue-400 hover:text-blue-300 py-1"
+                    >
+                       <Add01Icon size={12} /> Add Wallet
+                    </button>
+                 )}
+               </div>
+            )}
           </div>
         </div>
       )}
