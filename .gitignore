@@ -24,6 +24,7 @@ app/api/_keys/service-account.json
 # misc
 .DS_Store
 *.pem
+check_exports.js
 
 # debug
 npm-debug.log*
