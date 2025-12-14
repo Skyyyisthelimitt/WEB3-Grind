@@ -411,8 +411,8 @@ useEffect(() => {
   const needsAction = useMemo(() => {
     const normalize = (s: string = "") => s.toLowerCase().replace(/\s+/g, "").trim();
     const now = new Date();
-    // Set 48 hours threshold
-    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000); 
+    // Set 72 hours threshold (3 days)
+    const threshold = new Date(now.getTime() + 72 * 60 * 60 * 1000); 
 
     return collabs.filter((c) => {
       const s = normalize(c.status as any);
@@ -422,7 +422,7 @@ useEffect(() => {
       if (s === "posted" && c.dueAt) {
          const dueDate = new Date(c.dueAt);
          // Check if date is valid and within range
-         return !isNaN(dueDate.getTime()) && dueDate <= in48h;
+         return !isNaN(dueDate.getTime()) && dueDate <= threshold;
       }
       return false; 
     }).sort((a, b) => {
