@@ -36,27 +36,21 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { project, x, type, chain, wallet, mintDate, mintPrice, mintTime, mintTimezone } = body;
-
-    // Validate required fields
-    if (!project || !type || !chain) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
+    const { project = "New Whitelist", x, type = "WL", chain = "ETH", wallet, wallets, mintDate, mintPrice, mintTime, mintTimezone } = body;
 
     const supabase = await createClient();
     
-    // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await supabase.from("whitelists").insert({
+    const { data, error } = await supabase.from("whitelists").insert({
       project,
       x,
       type,
       chain,
-      wallets: wallet, // mapped from frontend 'wallet' to DB 'wallets'
+      wallets: wallets || wallet || "",
       mint_date: mintDate || null,
       price: mintPrice,
       mint_time: mintTime || null,
@@ -64,11 +58,11 @@ export async function POST(req: Request) {
       status: "Not Minted",
       priority: "Potential",
       user_id: user.id
-    });
+    }).select().single();
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, message: "Whitelist added successfully" });
+    return NextResponse.json({ success: true, whitelist: data });
   } catch (e: any) {
     console.error("WL POST error:", e?.message || e);
     return NextResponse.json({ error: "Failed to add whitelist: " + (e?.message || "Unknown error") }, { status: 500 });
@@ -77,34 +71,41 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
+    const body = await req.json();
+    
+    // Check ID in Param or Body
     const url = new URL(req.url);
-    const id = url.searchParams.get("id");
+    let id = url.searchParams.get("id");
+    if (!id && body.id) id = body.id;
+
     if (!id) {
       return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
     }
 
-    const body = await req.json();
-    const { project, x, type, chain, wallet, mintDate, mintPrice, mintTime, mintTimezone } = body;
+    const updateData: any = {};
+    
+    if (body.project !== undefined) updateData.project = body.project;
+    if (body.x !== undefined) updateData.x = body.x;
+    if (body.type !== undefined) updateData.type = body.type;
+    if (body.chain !== undefined) updateData.chain = body.chain;
+    
+    // Handle wallets alias
+    if (body.wallets !== undefined) updateData.wallets = body.wallets;
+    else if (body.wallet !== undefined) updateData.wallets = body.wallet;
+
+    if (body.mintDate !== undefined) updateData.mint_date = body.mintDate || null;
+    // Handle price mapping
+    if (body.price !== undefined) updateData.price = body.price;
+    else if (body.mintPrice !== undefined) updateData.price = body.mintPrice;
+
+    if (body.mintTime !== undefined) updateData.mint_time = body.mintTime || null;
+    if (body.mintTimezone !== undefined) updateData.mint_timezone = body.mintTimezone;
 
     const supabase = await createClient();
-
-    // Supabase ID is usually a number or uuid. 
-    // The previous implementation used row number.
-    // We assume the frontend now passes the Supabase ID.
     
     const { error } = await supabase
       .from("whitelists")
-      .update({
-        project,
-        x,
-        type,
-        chain,
-        wallets: wallet,
-        mint_date: mintDate || null,
-        price: mintPrice,
-        mint_time: mintTime || null,
-        mint_timezone: mintTimezone,
-      })
+      .update(updateData)
       .eq("id", id);
 
      if (error) throw error;
@@ -118,8 +119,14 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const url = new URL(req.url);
-    const id = url.searchParams.get("id");
+    let id = new URL(req.url).searchParams.get("id");
+    if (!id) {
+        try {
+            const body = await req.json();
+            if (body.id) id = body.id;
+        } catch {}
+    }
+
     if (!id) {
       return NextResponse.json({ error: "Missing ID parameter" }, { status: 400 });
     }
