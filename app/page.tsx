@@ -43,7 +43,7 @@ type Chain =
   | "APE"
   | "BASE"
   | "ABS"
-  | "Monad"
+  | "MONAD"
   | "HYPER";
 
 type WLType = "GTD" | "FCFS" | "OG" | "WL";
@@ -95,7 +95,7 @@ const CHAIN_COLORS: Record<Chain, string> = {
   APE: "#1e3a8a",
   BASE: "#38bdf8",
   ABS: "#86efac",
-  Monad: "#c084fc",
+  MONAD: "#c084fc",
   HYPER: "#14532d",
 };
 
@@ -103,12 +103,18 @@ const CHAIN_ORDER: Chain[] = [
   "ETH",
   "BTC",
   "SOL",
-  "Monad",
+  "MONAD",
   "BASE",
   "HYPER",
   "ABS",
   "APE",
 ];
+
+// Helper to get chain color with case-insensitive fallback (for old "Monad" data)
+const getChainColor = (chain: string): string => {
+  const normalized = chain.toUpperCase() as Chain;
+  return CHAIN_COLORS[normalized] || CHAIN_COLORS[chain as Chain] || "#8b5cf6";
+};
 
 /* --- Demo seed collabs --- */
 const seedCollabs: Collab[] = [
@@ -281,7 +287,10 @@ useEffect(() => {
     >);
 
     for (const wl of wls) {
-      const bucket = buckets[wl.chain];
+      // Normalize chain name to uppercase (handles old "Monad" data)
+      const normalizedChain = wl.chain.toUpperCase() as Chain;
+      const bucket = buckets[normalizedChain];
+      if (!bucket) continue; // Skip if chain not in CHAIN_ORDER
       bucket.count += 1;
       const label = `${wl.project}${wl.type ? ` (${wl.type})` : ""}`;
       const current = bucket.projectMap.get(label) ?? { label, count: 0 };
@@ -489,7 +498,7 @@ useEffect(() => {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search or type a command"
-              className="w-full pl-10 pr-12 py-2 rounded-xl bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+              className="w-full pl-10 pr-12 py-2 rounded-xl bg-zinc-900/60 border border-white/30 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/30"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-50">
               <span className="text-[10px] font-medium text-zinc-400 bg-zinc-800/50 px-1.5 py-0.5 rounded border border-zinc-700/50">⌘ F</span>
@@ -510,8 +519,8 @@ useEffect(() => {
             >
               Add Collab
             </Link>
-            <button className="p-2 rounded-xl bg-zinc-900/70 border border-white/10 hover:bg-zinc-800 transition-colors">
-              <Notification03Icon size={18} className="text-zinc-400" />
+            <button className="p-2 rounded-xl bg-zinc-900/70 border border-white/30 hover:bg-zinc-800 transition-colors">
+              <Notification03Icon size={18} className="text-white" />
             </button>
             <button 
               onClick={() => setIsEditProfileOpen(true)}
@@ -574,7 +583,7 @@ useEffect(() => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card 
               title="Collabs — Action Required" 
-              className="h-[480px]" 
+              className="h-[510px]" 
               badgeCount={needsAction.length}
               icon={<Agreement01Icon size={16} />}
               tone="indigo"
@@ -633,7 +642,7 @@ useEffect(() => {
 
             <Card 
               title="WL Summary" 
-              className="h-[480px]"
+              className="h-[510px]"
               icon={<PieChartIcon size={16} />}
               tone="violet"
             >
@@ -707,7 +716,7 @@ useEffect(() => {
 
             <Card 
               title="Upcoming Mints" 
-              className="h-[480px]"
+              className="h-[510px]"
               icon={<AlarmClockIcon size={16} />}
               tone="emerald"
             >
@@ -1016,6 +1025,7 @@ function ProfileCard({
 
 /* Calendar */
 function MiniCalendar({ wls, className = "" }: { wls: WL[], className?: string }) {
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -1026,11 +1036,18 @@ function MiniCalendar({ wls, className = "" }: { wls: WL[], className?: string }
   const startWeekday = firstDay.getDay();
   const daysInMonth = lastDay.getDate();
 
-  const mintDays = new Set(
+  // Build a map of dateStr -> array of { project, chain }
+  const mintsByDate = useMemo(() => {
+    const map: Record<string, { project: string; chain: Chain }[]> = {};
     wls
       .filter((w) => w.mintDate && new Date(w.mintDate).getMonth() === month)
-      .map((w) => w.mintDate!)
-  );
+      .forEach((w) => {
+        const dateStr = w.mintDate!;
+        if (!map[dateStr]) map[dateStr] = [];
+        map[dateStr].push({ project: w.project, chain: w.chain });
+      });
+    return map;
+  }, [wls, month]);
 
   const cells: Array<{ label: number | ""; dateStr?: string; muted?: boolean }> = [];
   const prevMonthDays = new Date(year, month, 0).getDate();
@@ -1045,11 +1062,6 @@ function MiniCalendar({ wls, className = "" }: { wls: WL[], className?: string }
   }
   while (cells.length < 42) cells.push({ label: cells.length - (startWeekday + daysInMonth) + 1, muted: true });
 
-  const upcoming = [...wls]
-    .filter((w) => w.mintDate && new Date(w.mintDate) >= new Date())
-    .sort((a, b) => (a.mintDate! > b.mintDate! ? 1 : -1))
-    .slice(0, 3);
-
   return (
     <Card 
       title="Whitelist Calendar" 
@@ -1062,7 +1074,7 @@ function MiniCalendar({ wls, className = "" }: { wls: WL[], className?: string }
         <div className="text-zinc-500 text-sm cursor-pointer hover:text-zinc-300">⋯</div>
       </div>
 
-      <div className="grid grid-cols-7 text-[10px] text-zinc-500 mb-2">
+      <div className="grid grid-cols-7 text-[11px] text-zinc-500 mb-2">
         {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
           <div key={d} className="text-center font-medium">{d}</div>
         ))}
@@ -1070,22 +1082,60 @@ function MiniCalendar({ wls, className = "" }: { wls: WL[], className?: string }
 
       <div className="grid grid-cols-7 gap-1">
         {cells.map((c, i) => {
-          const isMint = c.dateStr ? mintDays.has(c.dateStr) : false;
+          const mints = c.dateStr ? mintsByDate[c.dateStr] : undefined;
+          const hasMint = mints && mints.length > 0;
           const isToday =
             c.dateStr &&
             c.dateStr ===
               `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+          
+          // Get the primary chain color (first mint's chain)
+          const primaryChain = hasMint ? mints[0].chain : null;
+          const chainColor = primaryChain ? getChainColor(primaryChain) : null;
+          
           return (
             <div
               key={i}
-              className={`h-7 rounded-md grid place-items-center text-[10px] font-medium transition-all
+              className={`relative h-7 rounded-md grid place-items-center text-[11px] font-medium transition-all cursor-default
                 ${c.muted ? "text-zinc-700" : "text-zinc-300"}
                 ${isToday ? "text-white bg-zinc-800 ring-1 ring-white/20 shadow-lg shadow-black/50 z-10 scale-105" : ""}
-                ${!isToday && isMint ? "bg-violet-900/30 text-violet-200 border border-violet-500/20" : ""}
-                ${!isToday && !isMint && !c.muted ? "hover:bg-zinc-800/50" : ""}
+                ${!isToday && !hasMint && !c.muted ? "hover:bg-zinc-800/50" : ""}
               `}
+              style={
+                !isToday && hasMint && chainColor
+                  ? { 
+                      backgroundColor: `${chainColor}30`, 
+                      borderWidth: 1, 
+                      borderColor: `${chainColor}50`,
+                      color: chainColor 
+                    }
+                  : undefined
+              }
+              onMouseEnter={() => hasMint && c.dateStr && setHoveredDate(c.dateStr)}
+              onMouseLeave={() => setHoveredDate(null)}
             >
               {c.label}
+              {/* Tooltip */}
+              {hoveredDate === c.dateStr && hasMint && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
+                  <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 shadow-xl min-w-[120px] max-w-[200px]">
+                    <div className="text-[10px] text-zinc-500 mb-1 font-medium">Scheduled Mints</div>
+                    <div className="space-y-1">
+                      {mints.map((m, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs">
+                          <span 
+                            className="w-2 h-2 rounded-full shrink-0" 
+                            style={{ backgroundColor: getChainColor(m.chain) }}
+                          />
+                          <span className="text-zinc-200 truncate">{m.project}</span>
+                          <span className="text-zinc-500 text-[10px]">{m.chain.toUpperCase()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-zinc-700" />
+                </div>
+              )}
             </div>
           );
         })}
