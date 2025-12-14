@@ -1,4 +1,4 @@
-## WEB3 Manager
+## Web3 Wizard
 
 Manage your WEB3 journey in one place – track whitelists, collabs, and market data with a clean dashboard.
 
