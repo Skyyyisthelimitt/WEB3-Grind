@@ -9,7 +9,7 @@ import login1 from "../images/login1.png";
 import login2 from "../images/login2.png";
 import login3 from "../images/login3.png";
 import login4 from "../images/login4.png";
-import logo from "../images/login-logo.png";
+import logo from "../images/loginlogo.png";
 
 const slides = [
   {
@@ -98,12 +98,12 @@ export default function RegisterPage() {
             <div className="relative w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
               {/* Logo - Top Left */}
               <div className="absolute top-8 left-8 lg:top-3 lg:left-4">
-                <div className="relative w-37 h-17">
+                <div className="relative w-14 h-14">
                   <Image 
                     src={logo} 
                     alt="Logo" 
                     fill 
-                    className="object-contain object-left" 
+                    className="object-contain" 
                     priority
                   />
                 </div>
