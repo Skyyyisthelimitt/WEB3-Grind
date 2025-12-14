@@ -317,61 +317,40 @@ useEffect(() => {
   const pieChartData = pieSlices.length ? pieSlices : pieData;
 
   // Convert date and time from any timezone to PH time (UTC+8)
-  // Returns { date: string, time: string } with proper date adjustment
-  const convertToPHDateTime = (date: string, time: string, timezone: string): { date: string; time: string } => {
-    if (!date || !time || !timezone) return { date: date || "", time: "" };
-    
-    // Timezone offsets in hours from UTC
-    const timezoneOffsets: Record<string, number> = {
-      UTC: 0,
-      GMT: 0,
-      EST: -5,
-      PST: -8,
-      CST: -6,
-      JST: 9,
-      SGT: 8,
-      PH: 8,
-    };
-    
-    const sourceOffset = timezoneOffsets[timezone] ?? 0;
-    const phOffset = 8; // PH is UTC+8
-    
+  // Convert date/time from source timezone to Local Browser Time
+  const convertToLocalDateTime = (dateStr: string, timeStr: string, timezone: string) => {
     try {
-      // Parse the date (YYYY-MM-DD format)
-      const [year, month, day] = date.split("-").map(Number);
-      if (isNaN(year) || isNaN(month) || isNaN(day)) return { date, time: "" };
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const [hours, minutes] = timeStr.split(":").map(Number);
       
-      // Parse time (HH:MM format)
-      const [hours, minutes] = time.split(":").map(Number);
-      if (isNaN(hours) || isNaN(minutes)) return { date, time: "" };
+      const offsets: Record<string, number> = {
+        UTC: 0, GMT: 0, EST: -5, PST: -8, CST: -6, JST: 9, SGT: 8, PH: 8
+      };
+      const sourceOffset = offsets[timezone] ?? 0;
       
-      // Create a date string in ISO format, treating the input as if it's in the source timezone
-      // We'll create a UTC date by subtracting the source offset
+      // Calculate UTC timestamp from source input
       const sourceDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
-      // Convert source time to UTC by subtracting the source offset
       const utcTime = sourceDate.getTime() - (sourceOffset * 60 * 60 * 1000);
-      // Convert UTC to PH time by adding PH offset
-      const phTime = utcTime + (phOffset * 60 * 60 * 1000);
-      const phDate = new Date(phTime);
+
+      // Create Date object which automatically uses browser's local timezone
+      const localDate = new Date(utcTime);
       
-      // Extract PH date and time
-      const phYear = phDate.getUTCFullYear();
-      const phMonth = String(phDate.getUTCMonth() + 1).padStart(2, "0");
-      const phDay = String(phDate.getUTCDate()).padStart(2, "0");
-      const phHours = phDate.getUTCHours();
-      const phMins = phDate.getUTCMinutes();
+      const lYear = localDate.getFullYear();
+      const lMonth = String(localDate.getMonth() + 1).padStart(2, "0");
+      const lDay = String(localDate.getDate()).padStart(2, "0");
+      const lHours = localDate.getHours();
+      const lMins = localDate.getMinutes();
       
-      const convertedDate = `${phYear}-${phMonth}-${phDay}`;
+      const convertedDate = `${lYear}-${lMonth}-${lDay}`;
       
-      // Format as 12-hour time with AM/PM
-      const period = phHours >= 12 ? "PM" : "AM";
-      const displayHours = phHours % 12 || 12;
-      const convertedTime = `${displayHours}:${String(phMins).padStart(2, "0")} ${period}`;
+      const period = lHours >= 12 ? "PM" : "AM";
+      const displayHours = lHours % 12 || 12;
+      const convertedTime = `${displayHours}:${String(lMins).padStart(2, "0")} ${period}`;
       
       return { date: convertedDate, time: convertedTime };
     } catch (error) {
       console.error("Error converting date/time:", error);
-      return { date, time: "" };
+      return { date: dateStr, time: "" };
     }
   };
 
@@ -406,7 +385,7 @@ useEffect(() => {
         let phTime = "";
         
         if (w.mintTime && w.mintTimezone && w.mintDate) {
-          const converted = convertToPHDateTime(w.mintDate, w.mintTime, w.mintTimezone);
+          const converted = convertToLocalDateTime(w.mintDate, w.mintTime, w.mintTimezone);
           phDate = converted.date;
           phTime = converted.time;
         }
@@ -414,6 +393,7 @@ useEffect(() => {
         return {
           id: w.id,
           project: w.project,
+          chain: w.chain,
           phase: w.type,
           mintDate: phDate,
           formattedDate: phDate ? formatDate(phDate) : "",
@@ -728,12 +708,12 @@ useEffect(() => {
                       className="rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2 flex items-center justify-between"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-zinc-200 font-medium truncate">{s.project}</div>
+                        <div className="text-[15px] font-medium truncate" style={{ color: CHAIN_COLORS[s.chain as Chain] || "#e4e4e7" }}>{s.project}</div>
                         <div className="text-xs text-zinc-400 mt-0.5">{s.phase}</div>
                       </div>
                       <div className="text-right ml-2">
                         {s.phTime && (
-                          <div className="text-xs text-blue-400 font-medium">{s.phTime}</div>
+                          <div className="text-xs text-white font-medium">{s.phTime}</div>
                         )}
                         <div className="text-xs text-zinc-500">{s.formattedDate}</div>
                       </div>
