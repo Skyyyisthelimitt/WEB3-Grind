@@ -490,14 +490,16 @@ useEffect(() => {
       {/* Top Header - Sticky & Full Width */}
       <div className="h-[88px] border-b border-zinc-900/60 bg-black/40 backdrop-blur-sm sticky top-0 z-30">
         <div className="h-full w-full max-w-[1500px] mx-auto px-4 md:px-6 flex items-center justify-between">
-          {/* Left: Search */}
-          <div className="relative w-full max-w-sm">
+          <h1 className="text-2xl font-bold text-white tracking-tight shrink-0">Dashboard</h1>
+          
+          {/* Central Search Bar */}
+          <div className="flex-1 max-w-md mx-6 relative hidden md:block">
             <Search01Icon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search or type a command"
-              className="w-full pl-10 pr-12 py-2 rounded-xl bg-zinc-900/60 border border-white/30 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/30"
+              className="w-full pl-10 pr-12 py-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700/80 transition-all font-medium"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-50">
               <span className="text-[10px] font-medium text-zinc-400 bg-zinc-800/50 px-1.5 py-0.5 rounded border border-zinc-700/50">⌘ F</span>
@@ -505,7 +507,7 @@ useEffect(() => {
           </div>
 
           {/* Right: Actions + Bell + Profile */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Link
               href="/whitelists"
               className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
