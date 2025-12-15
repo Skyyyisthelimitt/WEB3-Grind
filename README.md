@@ -11,9 +11,12 @@ Manage your WEB3 journey in one place – track whitelists, collabs, and market 
   - Project, X/Twitter, community, spots, contacts, deadlines, GA links, winners links, and status.
   - “Ongoing / Done” views and edit/delete controls.
 - **Crypto overview**:
-  - Three customizable cards (BTC/ETH/SOL by default) with live prices and sparkline charts.
-  - Per‑card timeframe switcher (1D / 7D / 1M) and coin picker (BTC, ETH, SOL, BNB, XRP, ADA, DOGE, AVAX, MATIC).
-  - USD + PHP conversion using a live FX rate.
+  - **Live Markets Table**: Track top 100 coins with real-time prices, 24h changes, market caps, and volume.
+  - **Advanced UI**: Sleek dark mode design with gradient sparkline charts for 7-day trends.
+  - **Exchange Integration**: Direct trade links to Binance, Bybit, Coinbase, and CoinGecko with custom listed icons.
+  - **Smart Pagination**: Responsive, Shadcn-style pagination for easy navigation.
+  - **Currency Selector**: Multi-currency support (USD, EUR, GBP, PHP, JPY, KRW, AUD) with instant conversion.
+  - **Favorites**: Star your top coins for quick access in the dedicated "Favorites" section.
 - **Daily inspiration**:
   - Daily Bible verse and motivational quote section.
 - **Auth & layout**:
