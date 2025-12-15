@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Star, Search, ChevronDown, Bell, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, Search, ChevronDown, Bell, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ArrowUpRight } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, LineChart, Line } from "recharts";
 import Link from "next/link";
 import Image from "next/image";
@@ -87,7 +87,7 @@ export default function CryptoPricesPage() {
       }
     };
     
-    // Debounce to 300ms to improve responsiveness while preventing double-fetches
+    // Debounce to 300ms
     const timer = setTimeout(fetchCryptos, page === 1 && retryTrigger === 0 ? 0 : 300);
     return () => { alive = false; clearTimeout(timer); };
   }, [currency, page, retryTrigger]);
@@ -109,8 +109,25 @@ export default function CryptoPricesPage() {
 
   // Logic for favorites
   const [favorites, setFavorites] = useState<string[]>([]);
+
+  // Load favorites from local storage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("crypto-favorites");
+    if (stored) {
+      try {
+        setFavorites(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse favorites", e);
+      }
+    }
+  }, []);
+
   const toggleFavorite = (id: string) => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id];
+      localStorage.setItem("crypto-favorites", JSON.stringify(next));
+      return next;
+    });
   };
    const favoriteCryptos = useMemo(() => 
     favorites.map(id => cryptos.find(c => c.id === id)).filter(Boolean) as CoinGeckoCoin[],
@@ -164,9 +181,20 @@ export default function CryptoPricesPage() {
       {/* Header - Sticky & Full Width */}
       <div className="h-[88px] border-b border-zinc-900/60 bg-black/40 backdrop-blur-sm sticky top-0 z-30">
         <div className="h-full w-full max-w-[1500px] mx-auto px-4 md:px-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white tracking-tight">Prices</h1>
-          <div className="flex items-center gap-3">
-            {/* Currency Dropdown */}
+          <h1 className="text-2xl font-bold text-white tracking-tight shrink-0">Crypto Market</h1>
+          
+          {/* Central Search Bar */}
+          <div className="flex-1 max-w-md mx-6 relative hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+            <input 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search coins..." 
+              className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-700/80 transition-all font-medium"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
             {/* Currency Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button 
@@ -228,7 +256,7 @@ export default function CryptoPricesPage() {
         </div>
 
         {/* Favorite Crypto Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
           {favoriteCryptos.map(coin => (
              <FavoriteCryptoCard 
                 key={coin.id} 
@@ -238,8 +266,9 @@ export default function CryptoPricesPage() {
               />
           ))}
           {favoriteCryptos.length === 0 && (
-            <div className="col-span-3 text-center py-8 text-zinc-500">
-               No favorites yet. Star coins to see them here.
+            <div className="col-span-full text-center py-12 text-zinc-500 flex flex-col items-center justify-center gap-2 border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20">
+               <Star className="w-8 h-8 text-zinc-700 mb-1" />
+               <p>No favorites yet. Star coins to see them here.</p>
             </div>
           )}
         </div>
@@ -301,34 +330,30 @@ export default function CryptoPricesPage() {
                       />
                     </div>
                     <div>
-                      <div className="text-white font-semibold text-sm">{coin.name}</div>
-                      <div className="text-zinc-500 text-xs uppercase">{coin.symbol}</div>
+                      <div className="text-white font-bold text-sm leading-none flex items-center gap-2">
+                        {coin.name}
+                        {favoriteCryptos.some(f => f.id === coin.id) && <Star size={12} className="fill-emerald-500 text-emerald-500" />}
+                      </div>
+                      <div className="text-zinc-500 text-xs font-medium uppercase mt-0.5">{coin.symbol}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-5 py-4 text-right text-white font-medium">
-                  {formatRawPrice(coin.current_price)}
-                </td>
                 <td className="px-5 py-4 text-right">
-                  <span className={`text-sm font-medium ${
-                    coin.price_change_percentage_24h >= 0 
-                      ? "text-emerald-400" 
-                      : "text-rose-400"
-                  }`}>
-                    {coin.price_change_percentage_24h >= 0 ? "+" : ""}
-                    {coin.price_change_percentage_24h?.toFixed(2)}%
-                  </span>
+                  <span className="text-white font-medium text-sm">{formatCurrency(coin.current_price)}</span>
+                </td>
+                <td className={`px-5 py-4 text-right text-sm font-medium ${coin.price_change_percentage_24h >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                   {coin.price_change_percentage_24h > 0 ? "+" : ""}{coin.price_change_percentage_24h.toFixed(2)}%
                 </td>
                 <td className="px-5 py-4 hidden sm:table-cell">
-                  <div className="w-24 h-10 mx-auto">
-                    <MiniSparkline data={coin.sparkline_in_7d?.price || []} positive={coin.price_change_percentage_24h >= 0} />
-                  </div>
+                   <div className="h-[40px] w-[140px] mx-auto">
+                     <MiniSparkline data={coin.sparkline_in_7d.price} positive={coin.price_change_percentage_24h >= 0} />
+                   </div>
                 </td>
-                <td className="px-5 py-4 text-right text-zinc-300 font-medium hidden md:table-cell">
-                   {formatCurrency(coin.market_cap)}
+                <td className="px-5 py-4 text-right hidden md:table-cell">
+                   <span className="text-zinc-400 text-sm">{formatCurrency(coin.market_cap)}</span>
                 </td>
-                <td className="px-5 py-4 text-right text-zinc-400 text-sm hidden lg:table-cell">
-                   {formatCurrency(coin.total_volume)}
+                <td className="px-5 py-4 text-right hidden lg:table-cell">
+                   <span className="text-zinc-400 text-sm">{formatCurrency(coin.total_volume)}</span>
                 </td>
                 <td className="px-5 py-4 text-center">
                     <div className="flex items-center justify-center gap-2">
@@ -363,81 +388,37 @@ export default function CryptoPricesPage() {
                     </div>
                 </td>
                 <td className="px-5 py-4 text-center">
-                  <button 
-                    onClick={() => toggleFavorite(coin.id)}
-                    className="p-1.5 rounded-lg hover:bg-zinc-700/50 transition-colors"
-                  >
-                    <Star 
-                      size={18} 
-                      className={favorites.includes(coin.id) ? "text-amber-400 fill-amber-400" : "text-zinc-600"} 
-                    />
-                  </button>
+                    <button onClick={() => toggleFavorite(coin.id)} className="hover:scale-110 transition-transform">
+                        <Star size={18} className={`${favoriteCryptos.some(f => f.id === coin.id) ? "fill-amber-400 text-amber-400" : "text-zinc-600 hover:text-zinc-400"}`} />
+                    </button>
                 </td>
               </tr>
-            )))}
+             ))
+            )}
           </tbody>
         </table>
-        
-        {/* Pagination */ }
-        {/* Pagination - Shadcn Style */}
-        <div className="flex items-center justify-center space-x-6 py-6 border-t border-zinc-800/60 select-none">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1 || loading}
-              className="inline-flex items-center justify-center gap-1 pl-2.5 pr-4 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none"
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-center mt-6">
+        <div className="flex items-center gap-2">
+           <button 
+             onClick={() => setPage(p => Math.max(1, p - 1))}
+             disabled={page === 1 || loading}
+             className="inline-flex items-center justify-center gap-1 pl-2.5 pr-4 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none"
             >
               <ChevronLeft className="h-4 w-4" />
               <span>Previous</span>
             </button>
-            
-            <div className="flex items-center space-x-1">
-              {(() => {
-                const totalEstimatedPages = 100;
-                const showPages = [];
-                
-                showPages.push(1);
-                
-                if (page > 3) showPages.push("...");
-
-                const start = Math.max(2, page - 1);
-                const end = Math.min(totalEstimatedPages - 1, page + 1);
-                
-                for (let i = start; i <= end; i++) {
-                   if (i === 1) continue; 
-                   showPages.push(i);
-                }
-
-                if (page < totalEstimatedPages - 2) showPages.push("...");
-                
-                if (totalEstimatedPages > 1) showPages.push(totalEstimatedPages);
-
-                return showPages.map((p, i) => (
-                    p === "..." ? (
-                         <div key={i} className="flex h-9 w-9 items-center justify-center">
-                            <span className="text-zinc-500 text-sm">...</span>
-                            <span className="sr-only">More pages</span>
-                         </div>
-                    ) : (
-                      <button
-                        key={i}
-                        onClick={() => typeof p === 'number' && setPage(p as number)}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium transition-colors ${
-                          p === page
-                            ? "border border-zinc-700 bg-zinc-800 text-white shadow-sm" 
-                            : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    )
-                ));
-              })()}
+            <div className="flex items-center gap-1">
+                 <button className="h-9 w-9 flex items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-white text-sm font-medium hover:bg-zinc-700 transition-colors">
+                    {page}
+                 </button>
             </div>
-
-            <button
-              onClick={() => setPage(p => p + 1)}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-1 pl-4 pr-2.5 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none"
+             <button 
+               onClick={() => setPage(p => p + 1)}
+               disabled={loadingMore || loading}
+               className="inline-flex items-center justify-center gap-1 pl-4 pr-2.5 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none"
             >
               <span>Next</span>
               <ChevronRight className="h-4 w-4" />
@@ -452,7 +433,8 @@ export default function CryptoPricesPage() {
 /* ----------------------- Favorite Card Component ----------------------- */
 function FavoriteCryptoCard({ coin, currency, onUnfavorite }: { coin: CoinGeckoCoin; currency: Currency; onUnfavorite: () => void }) {
   const positive = coin.price_change_percentage_24h >= 0;
-  const chartColor = positive ? "#22c55e" : "#ef4444";
+  // Colors based on trend: Green (emerald-500) or Red (rose-500)
+  const color = positive ? "#10b981" : "#f43f5e"; 
   const data = (coin.sparkline_in_7d?.price || []).map((v, i) => ({ x: i, y: v }));
   
   const formatRawPrice = (num: number) => {
@@ -461,54 +443,59 @@ function FavoriteCryptoCard({ coin, currency, onUnfavorite }: { coin: CoinGeckoC
   };
 
   return (
-    <div className="relative rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50 p-4 overflow-hidden group">
-      {/* Background gradient */}
-      <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${positive ? "from-emerald-500/20" : "from-rose-500/20"} to-transparent`} />
+    <div className="relative flex flex-col justify-between h-[220px] rounded-3xl bg-[#0f0f11] border border-zinc-800 p-6 overflow-hidden group hover:border-zinc-600 transition-all shadow-xl shadow-black/20 text-left">
       
       {/* Header */}
-      <div className="relative flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-            <Image src={coin.image} width={18} height={18} alt="icon" className="rounded-full" />
-            <div className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">{coin.symbol}</div>
+      <div className="flex items-start justify-between z-10 w-full">
+        <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-800/50 p-1">
+                <Image src={coin.image} width={40} height={40} alt="icon" className="rounded-full object-cover w-full h-full" />
+            </div>
+            <div className="text-left">
+                 <div className="text-white font-bold text-sm leading-none mb-1 flex items-center gap-1">
+                    {coin.name}
+                    <span className="text-zinc-500 font-medium">({coin.symbol.toUpperCase()})</span>
+                 </div>
+                 <div className="text-zinc-500 text-xs font-medium">Live Chart</div>
+            </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={onUnfavorite}
-            className="p-1 rounded hover:bg-zinc-700/50 transition-colors text-amber-400"
-          >
-            <Star size={16} className="fill-amber-400" />
-          </button>
-        </div>
+        <button 
+           onClick={onUnfavorite}
+           className="w-8 h-8 rounded-full bg-zinc-800/50 flex items-center justify-center group/btn hover:bg-zinc-700 transition-colors"
+           title="Unfavorite"
+        >
+            <Star size={16} className="fill-amber-400 text-amber-400 group-hover/btn:opacity-80 transition-opacity" />
+        </button>
       </div>
 
-      {/* Coin Info */}
-      <div className="relative">
-        <div className="text-lg font-bold text-white mb-0.5">{coin.name}</div>
-        <div className="text-2xl font-bold text-white tracking-tight">
+      {/* Main Value */}
+      <div className="z-10 mt-auto mb-4 flex flex-col items-start">
+        <div className="text-zinc-500 text-xs font-medium mb-1">Current Price</div>
+        <div className="text-3xl font-bold text-white tracking-tight mb-1">
           {formatRawPrice(coin.current_price)}
         </div>
-        <div className={`text-sm font-medium mt-1 ${positive ? "text-emerald-400" : "text-rose-400"}`}>
-          {positive ? "+" : ""}{coin.price_change_percentage_24h?.toFixed(2)}%
+        <div className={`text-sm font-bold flex items-center justify-start gap-1.5 ${positive ? "text-emerald-400" : "text-rose-400"}`}>
+             {positive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+             <span>{Math.abs(coin.price_change_percentage_24h).toFixed(2)}%</span>
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="absolute right-0 bottom-0 w-32 h-16 opacity-40 group-hover:opacity-60 transition-opacity">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
+      {/* Chart Background */}
+      <div className="absolute inset-x-0 bottom-0 h-[100px] opacity-20 pointer-events-none mix-blend-screen">
+         <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data}>
             <defs>
               <linearGradient id={`fav-grad-${coin.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={chartColor} stopOpacity={0.4} />
-                <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+                <stop offset="0%" stopColor={color} stopOpacity={1} />
+                <stop offset="100%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
             <Area
               type="monotone"
               dataKey="y"
-              stroke={chartColor}
-              strokeWidth={2}
+              stroke={color}
+              strokeWidth={3}
               fill={`url(#fav-grad-${coin.id})`}
-              dot={false}
               isAnimationActive={false}
             />
           </AreaChart>
