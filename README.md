@@ -12,11 +12,13 @@ Manage your WEB3 journey in one place – track whitelists, collabs, and market 
   - “Ongoing / Done” views and edit/delete controls.
 - **Crypto overview**:
   - **Live Markets Table**: Track top 100 coins with real-time prices, 24h changes, market caps, and volume.
-  - **Advanced UI**: Sleek dark mode design with gradient sparkline charts for 7-day trends.
+  - **Advanced UI**: Sleek dark mode design with gradient sparkline charts for 7-day price trends.
   - **Exchange Integration**: Direct trade links to Binance, Bybit, Coinbase, and CoinGecko with custom listed icons.
   - **Smart Pagination**: Responsive, Shadcn-style pagination for easy navigation.
   - **Currency Selector**: Multi-currency support (USD, EUR, GBP, PHP, JPY, KRW, AUD) with instant conversion.
-  - **Favorites**: Star your top coins for quick access in the dedicated "Favorites" section.
+  - **Favorites**: Persisted favorite coins (localStorage) with detailed trend cards and quick actions.
+- **Dashboard**:
+  - **Enhanced Header**: Unified design with centered search bar and streamlined navigation.
 - **Daily inspiration**:
   - Daily Bible verse and motivational quote section.
 - **Auth & layout**:
