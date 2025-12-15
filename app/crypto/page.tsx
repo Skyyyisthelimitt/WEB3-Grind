@@ -1,142 +1,218 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Star, Search, ChevronDown, Bell, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Star, Search, ChevronDown, Bell, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, LineChart, Line } from "recharts";
 import Link from "next/link";
 import Image from "next/image";
 
 /* ----------------------- Types ----------------------- */
-type CryptoCoin = {
+type CoinGeckoCoin = {
   id: string;
   symbol: string;
   name: string;
-  price: number;
-  marketCap: number;
-  circulatingSupply: number;
-  change24h: number;
-  sparkline: number[];
-  icon?: string;
+  image: string;
+  current_price: number;
+  market_cap: number;
+  market_cap_rank: number;
+  total_volume: number;
+  price_change_percentage_24h: number;
+  sparkline_in_7d: { price: number[] };
 };
 
-/* ----------------------- Initial Data ----------------------- */
-const INITIAL_CRYPTOS: CryptoCoin[] = [
-  { id: "bitcoin", symbol: "BTC", name: "Bitcoin", price: 97500, marketCap: 1920000000000, circulatingSupply: 19700000, change24h: 2.15, sparkline: [95000, 96000, 95500, 97000, 96500, 97500] },
-  { id: "ethereum", symbol: "ETH", name: "Ethereum", price: 3650, marketCap: 439000000000, circulatingSupply: 120200000, change24h: 1.32, sparkline: [3500, 3550, 3600, 3580, 3620, 3650] },
-  { id: "solana", symbol: "SOL", name: "Solana", price: 225, marketCap: 107000000000, circulatingSupply: 475000000, change24h: -0.84, sparkline: [230, 228, 225, 227, 224, 225] },
-  { id: "bnb", symbol: "BNB", name: "BNB", price: 715, marketCap: 103000000000, circulatingSupply: 144000000, change24h: 0.45, sparkline: [710, 712, 715, 713, 716, 715] },
-  { id: "xrp", symbol: "XRP", name: "XRP", price: 2.35, marketCap: 135000000000, circulatingSupply: 57400000000, change24h: -1.23, sparkline: [2.40, 2.38, 2.35, 2.37, 2.34, 2.35] },
-  { id: "cardano", symbol: "ADA", name: "Cardano", price: 1.05, marketCap: 37000000000, circulatingSupply: 35200000000, change24h: 3.21, sparkline: [1.00, 1.02, 1.03, 1.04, 1.06, 1.05] },
-  { id: "dogecoin", symbol: "DOGE", name: "Dogecoin", price: 0.42, marketCap: 62000000000, circulatingSupply: 147000000000, change24h: 5.67, sparkline: [0.38, 0.40, 0.41, 0.40, 0.43, 0.42] },
-  { id: "avalanche", symbol: "AVAX", name: "Avalanche", price: 48.50, marketCap: 20000000000, circulatingSupply: 412000000, change24h: -2.15, sparkline: [50, 49, 48, 49, 47, 48.5] },
-  { id: "polkadot", symbol: "DOT", name: "Polkadot", price: 8.75, marketCap: 13500000000, circulatingSupply: 1540000000, change24h: 1.89, sparkline: [8.50, 8.60, 8.70, 8.65, 8.80, 8.75] },
-  { id: "chainlink", symbol: "LINK", name: "Chainlink", price: 25.80, marketCap: 16200000000, circulatingSupply: 628000000, change24h: 4.32, sparkline: [24, 24.5, 25, 25.2, 25.6, 25.8] },
-];
+type Currency = "usd" | "eur" | "gbp" | "php" | "jpy" | "krw" | "aud";
+
+const CURRENCIES: Record<Currency, { label: string; symbol: string; countryCode: string }> = {
+  usd: { label: "USD", symbol: "$", countryCode: "US" },
+  eur: { label: "EUR", symbol: "€", countryCode: "EU" },
+  gbp: { label: "GBP", symbol: "£", countryCode: "GB" },
+  php: { label: "PHP", symbol: "₱", countryCode: "PH" },
+  jpy: { label: "JPY", symbol: "¥", countryCode: "JP" },
+  krw: { label: "KRW", symbol: "₩", countryCode: "KR" },
+  aud: { label: "AUD", symbol: "A$", countryCode: "AU" },
+};
 
 /* ----------------------- Component ----------------------- */
 export default function CryptoPricesPage() {
-  const [cryptos, setCryptos] = useState<CryptoCoin[]>(INITIAL_CRYPTOS);
+  const [cryptos, setCryptos] = useState<CoinGeckoCoin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [favorites, setFavorites] = useState<string[]>(["bitcoin", "ethereum", "solana"]);
-  const [activeTab, setActiveTab] = useState<"watchlist" | "portfolio">("watchlist");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [error, setError] = useState("");
+  const [currency, setCurrency] = useState<Currency>("usd");
+  const [page, setPage] = useState(1);
+  const [retryTrigger, setRetryTrigger] = useState(0);
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof CoinGeckoCoin | ""; direction: "asc" | "desc" }>({ key: "", direction: "asc" });
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch crypto data
+  // Close dropdown on outside click
   useEffect(() => {
-    let alive = true;
-    const fetchCryptos = async () => {
-      try {
-        const res = await fetch("/api/crypto-list");
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        if (alive && data.cryptos) {
-          setCryptos(data.cryptos);
-        }
-      } catch (e) {
-        console.error("Failed to fetch crypto data:", e);
-      } finally {
-        if (alive) setLoading(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsCurrencyOpen(false);
       }
     };
-    fetchCryptos();
-    const interval = setInterval(fetchCryptos, 60000);
-    return () => { alive = false; clearInterval(interval); };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Toggle favorite
-  const toggleFavorite = (id: string) => {
-    setFavorites(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(f => f !== id);
+  // Fetch crypto data from CoinGecko
+  useEffect(() => {
+    let alive = true;
+    setError(""); // Clear previous errors
+    if (page === 1) setLoading(true);
+    else setLoading(true); 
+
+    const fetchCryptos = async () => {
+      try {
+        const res = await fetch(
+          `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=10&page=${page}&sparkline=true`
+        );
+        if (res.status === 429) throw new Error("Rate limit exceeded. Please wait a moment.");
+        if (!res.ok) throw new Error("Failed to fetch data");
+        
+        const data = await res.json();
+        if (alive) {
+          setCryptos(data);
+        }
+      } catch (e: any) {
+        console.error("Failed to fetch crypto data:", e);
+        if (alive) setError(e.message || "Failed to load prices");
+      } finally {
+        if (alive) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
-      if (prev.length >= 3) {
-        return [...prev.slice(1), id];
-      }
-      return [...prev, id];
-    });
+    };
+    
+    // Debounce to 300ms to improve responsiveness while preventing double-fetches
+    const timer = setTimeout(fetchCryptos, page === 1 && retryTrigger === 0 ? 0 : 300);
+    return () => { alive = false; clearTimeout(timer); };
+  }, [currency, page, retryTrigger]);
+
+  // Reset pagination when currency changes
+  useEffect(() => {
+      setPage(1);
+      setCryptos([]);
+  }, [currency]);
+
+  // Handle Sort
+  const handleSort = (key: keyof CoinGeckoCoin) => {
+    let direction: "asc" | "desc" = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = "asc";
+    }
+    setSortConfig({ key, direction });
   };
 
-  // Filtered cryptos
-  const filteredCryptos = useMemo(() => {
-    if (!searchQuery.trim()) return cryptos;
-    const q = searchQuery.toLowerCase();
-    return cryptos.filter(c => 
-      c.name.toLowerCase().includes(q) || 
-      c.symbol.toLowerCase().includes(q)
-    );
-  }, [cryptos, searchQuery]);
-
-  // Favorite cryptos for cards
-  const favoriteCryptos = useMemo(() => 
-    favorites.map(id => cryptos.find(c => c.id === id)).filter(Boolean) as CryptoCoin[],
+  // Logic for favorites
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const toggleFavorite = (id: string) => {
+    setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+  };
+   const favoriteCryptos = useMemo(() => 
+    favorites.map(id => cryptos.find(c => c.id === id)).filter(Boolean) as CoinGeckoCoin[],
     [favorites, cryptos]
   );
 
-  // Pagination
-  const totalPages = Math.ceil(filteredCryptos.length / itemsPerPage);
-  const paginatedCryptos = filteredCryptos.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Filtered & Sorted cryptos
+  const processedCryptos = useMemo(() => {
+    let result = [...cryptos];
+    // Filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(c => 
+        c.name.toLowerCase().includes(q) || 
+        c.symbol.toLowerCase().includes(q)
+      );
+    }
+    // Sort
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aVal = a[sortConfig.key as keyof CoinGeckoCoin];
+        const bVal = b[sortConfig.key as keyof CoinGeckoCoin];
+        
+        // Handle undefined
+        if (aVal === undefined) return 1;
+        if (bVal === undefined) return -1;
 
-  const formatNumber = (num: number) => {
-    if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
-    if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-    if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-    return `$${num.toLocaleString()}`;
-  };
+        if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [cryptos, searchQuery, sortConfig]);
 
-  const formatSupply = (num: number, symbol: string) => {
-    if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B ${symbol}`;
-    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M ${symbol}`;
-    return `${num.toLocaleString()} ${symbol}`;
+  const formatCurrency = (num: number) => {
+    const sym = CURRENCIES[currency].symbol;
+    if (num >= 1e12) return `${sym}${(num / 1e12).toFixed(2)}T`;
+    if (num >= 1e9) return `${sym}${(num / 1e9).toFixed(2)}B`;
+    if (num >= 1e6) return `${sym}${(num / 1e6).toFixed(2)}M`;
+    return `${sym}${num.toLocaleString(undefined, { maximumFractionDigits: num < 1 ? 4 : 2 })}`;
   };
+  
+  const formatRawPrice = (num: number) => {
+     const sym = CURRENCIES[currency].symbol;
+     return `${sym}${num.toLocaleString(undefined, { maximumFractionDigits: num < 1 ? 5 : 2 })}`;
+  }
 
   return (
-    <div className="flex-1 w-full max-w-[1500px] mx-auto px-4 md:px-6 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Prices</h1>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/60 border border-zinc-700/50 text-sm">
-            <span className="text-lg">🇺🇸</span>
-            <span>USD</span>
-            <ChevronDown size={16} className="text-zinc-400" />
-          </button>
-          <Link
-            href="/crypto/portfolio"
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-          >
-            <Wallet size={18} />
-            Portfolio
-          </Link>
-          <button className="p-2 rounded-lg bg-zinc-800/60 border border-zinc-700/50">
-            <Bell size={20} className="text-zinc-400" />
-          </button>
+    <div className="flex flex-col min-h-screen pb-10">
+      {/* Header - Sticky & Full Width */}
+      <div className="h-[88px] border-b border-zinc-900/60 bg-black/40 backdrop-blur-sm sticky top-0 z-30">
+        <div className="h-full w-full max-w-[1500px] mx-auto px-4 md:px-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-white tracking-tight">Prices</h1>
+          <div className="flex items-center gap-3">
+            {/* Currency Dropdown */}
+            {/* Currency Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
+                className="flex items-center gap-2 pl-3 pr-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all text-sm group"
+              >
+                <span className="text-zinc-500 font-medium text-xs tracking-wide">{CURRENCIES[currency].countryCode}</span>
+                <span className="font-semibold text-zinc-100">{CURRENCIES[currency].label}</span>
+                <ChevronDown size={14} className={`text-zinc-500 group-hover:text-zinc-400 transition-transform duration-200 ${isCurrencyOpen ? "rotate-180" : ""}`} />
+              </button>
+              
+              {isCurrencyOpen && (
+                <div className="absolute top-full right-0 mt-2 w-32 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl overflow-hidden py-1 z-50">
+                  {(Object.keys(CURRENCIES) as Currency[]).map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => {
+                        setCurrency(c);
+                        setIsCurrencyOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 hover:bg-zinc-800/50 transition-colors ${currency === c ? "bg-zinc-800/80 text-white border-l-2 border-white pl-3.5" : "text-zinc-400"}`}
+                    >
+                      <span className="text-xs font-medium opacity-70 w-5">{CURRENCIES[c].countryCode}</span>
+                      <span className="font-medium">{CURRENCIES[c].label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button className="p-2 rounded-lg bg-zinc-800/60 border border-zinc-700/50">
+              <Bell size={20} className="text-zinc-400" />
+            </button>
+
+            <Link
+              href="/crypto/portfolio"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+            >
+              <Wallet size={18} />
+              Portfolio
+            </Link>
+          </div>
         </div>
       </div>
+
+      <div className="flex-1 w-full max-w-[1500px] mx-auto px-4 md:px-6 pt-6 space-y-6">
 
       {/* Favorite Cards Section */}
       <div className="bg-zinc-900/40 rounded-2xl border border-zinc-800/60 p-5">
@@ -147,217 +223,277 @@ export default function CryptoPricesPage() {
             </div>
             <div>
               <h2 className="text-white font-semibold">Follow your favorite coins</h2>
-              <p className="text-zinc-500 text-sm">Tap the ☆ at the right of any coin</p>
             </div>
           </div>
-          <Link 
-            href="/crypto/market"
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-all hover:scale-105 active:scale-95"
-          >
-            View the market
-          </Link>
         </div>
 
         {/* Favorite Crypto Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {favoriteCryptos.map(coin => (
-            <FavoriteCryptoCard 
-              key={coin.id} 
-              coin={coin} 
-              onUnfavorite={() => toggleFavorite(coin.id)} 
-            />
+             <FavoriteCryptoCard 
+                key={coin.id} 
+                coin={coin} 
+                currency={currency}
+                onUnfavorite={() => toggleFavorite(coin.id)} 
+              />
           ))}
           {favoriteCryptos.length === 0 && (
             <div className="col-span-3 text-center py-8 text-zinc-500">
-              No favorites yet. Click the star icon to add coins.
+               No favorites yet. Star coins to see them here.
             </div>
           )}
         </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search crypto"
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
-          />
-        </div>
-        <button 
-          onClick={() => setActiveTab("watchlist")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
-            activeTab === "watchlist" 
-              ? "border-zinc-300 text-zinc-900 bg-zinc-100" 
-              : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-          }`}
-        >
-          <Star size={16} />
-          Watchlist
-        </button>
-        <Link
-          href="/crypto/portfolio"
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
-            activeTab === "portfolio" 
-              ? "border-zinc-300 text-zinc-900 bg-zinc-100" 
-              : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-          }`}
-        >
-          <TrendingUp size={16} />
-          Portfolio
-        </Link>
       </div>
 
       {/* Crypto Table */}
       <div className="bg-zinc-900/40 rounded-2xl border border-zinc-800/60 overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-zinc-800/60">
-              <th className="text-left px-5 py-4 font-medium text-zinc-400 text-sm">Name</th>
-              <th className="text-right px-5 py-4 font-medium text-zinc-400 text-sm">Price</th>
-              <th className="text-right px-5 py-4 font-medium text-zinc-400 text-sm hidden md:table-cell">Market Cap</th>
-              <th className="text-right px-5 py-4 font-medium text-zinc-400 text-sm hidden lg:table-cell">Circulating Supply</th>
-              <th className="text-right px-5 py-4 font-medium text-zinc-400 text-sm">Change %</th>
-              <th className="text-center px-5 py-4 font-medium text-zinc-400 text-sm hidden sm:table-cell">Last 24H</th>
-              <th className="text-center px-3 py-4 font-medium text-zinc-400 text-sm w-12"></th>
+            <tr className="border-b border-zinc-800/60 text-zinc-400 text-xs uppercase tracking-wider">
+              <th className="px-4 py-4 text-center cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("market_cap_rank")}>#</th>
+              <th className="px-5 py-4 text-left cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("name")}>Coin</th>
+              <th className="px-5 py-4 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("current_price")}>Price</th>
+              <th className="px-5 py-4 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("price_change_percentage_24h")}>24h</th>
+              <th className="px-5 py-4 text-center hidden sm:table-cell">Last 7 Days</th>
+              <th className="px-5 py-4 text-right hidden md:table-cell cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("market_cap")}>Mkt Cap</th>
+              <th className="px-5 py-4 text-right hidden lg:table-cell cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("total_volume")}>Volume</th>
+              <th className="px-5 py-4 text-center">Trade</th>
+              <th className="px-5 py-4 w-12 text-center"></th>
             </tr>
           </thead>
           <tbody>
-            {paginatedCryptos.map((coin) => (
+            {error ? (
+              <tr className="border-b border-zinc-800/30">
+                <td colSpan={9} className="px-5 py-12 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <p className="text-rose-400">{error}</p>
+                    <button 
+                      onClick={() => setRetryTrigger(prev => prev + 1)}
+                      className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium transition-colors border border-zinc-700"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ) : loading && page === 1 ? (
+               Array.from({ length: 5 }).map((_, i) => (
+                 <tr key={i} className="border-b border-zinc-800/30">
+                   <td colSpan={9} className="px-5 py-6">
+                     <div className="h-4 bg-zinc-800/50 rounded animate-pulse w-full"></div>
+                   </td>
+                 </tr>
+               ))
+            ) : (
+             processedCryptos.map((coin) => (
               <tr key={coin.id} className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors">
+                <td className="px-4 py-4 text-center text-zinc-500 font-medium">
+                  {coin.market_cap_rank}
+                </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold">
-                      {coin.symbol.slice(0, 2)}
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
+                      <Image 
+                         src={coin.image} 
+                         alt={coin.name} 
+                         fill 
+                         className="object-cover" 
+                      />
                     </div>
                     <div>
-                      <div className="text-white font-medium">{coin.name}</div>
-                      <div className="text-zinc-500 text-sm">{coin.symbol}</div>
+                      <div className="text-white font-semibold text-sm">{coin.name}</div>
+                      <div className="text-zinc-500 text-xs uppercase">{coin.symbol}</div>
                     </div>
                   </div>
                 </td>
                 <td className="px-5 py-4 text-right text-white font-medium">
-                  ${coin.price.toLocaleString(undefined, { maximumFractionDigits: coin.price < 1 ? 4 : 2 })}
-                </td>
-                <td className="px-5 py-4 text-right text-zinc-300 hidden md:table-cell">
-                  {formatNumber(coin.marketCap)}
-                </td>
-                <td className="px-5 py-4 text-right text-zinc-300 hidden lg:table-cell">
-                  {formatSupply(coin.circulatingSupply, coin.symbol)}
+                  {formatRawPrice(coin.current_price)}
                 </td>
                 <td className="px-5 py-4 text-right">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-medium ${
-                    coin.change24h >= 0 
-                      ? "text-emerald-400 bg-emerald-400/10" 
-                      : "text-rose-400 bg-rose-400/10"
+                  <span className={`text-sm font-medium ${
+                    coin.price_change_percentage_24h >= 0 
+                      ? "text-emerald-400" 
+                      : "text-rose-400"
                   }`}>
-                    {coin.change24h >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                    {coin.change24h >= 0 ? "+" : ""}{coin.change24h.toFixed(2)}%
+                    {coin.price_change_percentage_24h >= 0 ? "+" : ""}
+                    {coin.price_change_percentage_24h?.toFixed(2)}%
                   </span>
                 </td>
-                <td className="px-3 py-4 hidden sm:table-cell">
-                  <div className="w-20 h-8 mx-auto">
-                    <MiniSparkline data={coin.sparkline} positive={coin.change24h >= 0} />
+                <td className="px-5 py-4 hidden sm:table-cell">
+                  <div className="w-24 h-10 mx-auto">
+                    <MiniSparkline data={coin.sparkline_in_7d?.price || []} positive={coin.price_change_percentage_24h >= 0} />
                   </div>
                 </td>
-                <td className="px-3 py-4 text-center">
+                <td className="px-5 py-4 text-right text-zinc-300 font-medium hidden md:table-cell">
+                   {formatCurrency(coin.market_cap)}
+                </td>
+                <td className="px-5 py-4 text-right text-zinc-400 text-sm hidden lg:table-cell">
+                   {formatCurrency(coin.total_volume)}
+                </td>
+                <td className="px-5 py-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                        {/* CoinGecko */}
+                        <a href={`https://www.coingecko.com/en/coins/${coin.id}`} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform" title="View on CoinGecko">
+                           <img 
+                             src="/coingecko.png"
+                             width={24} height={24} alt="CG" className="rounded-full bg-white object-cover" 
+                           />
+                        </a>
+                         {/* Binance (Local) */}
+                        <a href={`https://www.binance.com/en/trade/${coin.symbol.toUpperCase()}_USDT`} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform" title="Trade on Binance">
+                             <img 
+                               src="/binance.png" 
+                               width={24} height={24} alt="Binance" className="rounded-full object-cover" 
+                             />
+                        </a>
+                         {/* Bybit */}
+                        <a href={`https://www.bybit.com/en-US/trade/spot/${coin.symbol.toUpperCase()}/USDT`} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform" title="Trade on Bybit">
+                              <img 
+                               src="/bybit.png" 
+                               width={24} height={24} alt="Bybit" className="rounded-full object-cover" 
+                             />
+                        </a>
+                          {/* Coinbase */}
+                         <a href={`https://www.coinbase.com/price/${coin.id}`} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform" title="Trade on Coinbase">
+                              <img 
+                               src="/coinbase.png" 
+                               width={24} height={24} alt="Coinbase" className="rounded-full object-cover" 
+                             />
+                        </a>
+                    </div>
+                </td>
+                <td className="px-5 py-4 text-center">
                   <button 
                     onClick={() => toggleFavorite(coin.id)}
                     className="p-1.5 rounded-lg hover:bg-zinc-700/50 transition-colors"
                   >
                     <Star 
                       size={18} 
-                      className={favorites.includes(coin.id) ? "text-zinc-100 fill-zinc-100" : "text-zinc-500"} 
+                      className={favorites.includes(coin.id) ? "text-amber-400 fill-amber-400" : "text-zinc-600"} 
                     />
                   </button>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
+        
+        {/* Pagination */ }
+        {/* Pagination - Shadcn Style */}
+        <div className="flex items-center justify-center space-x-6 py-6 border-t border-zinc-800/60 select-none">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="inline-flex items-center justify-center gap-1 pl-2.5 pr-4 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Previous</span>
+            </button>
+            
+            <div className="flex items-center space-x-1">
+              {(() => {
+                const totalEstimatedPages = 100;
+                const showPages = [];
+                
+                showPages.push(1);
+                
+                if (page > 3) showPages.push("...");
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-4 border-t border-zinc-800/60">
-          <div className="text-sm text-zinc-500">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredCryptos.length)} of {filteredCryptos.length}
-          </div>
-          <div className="flex items-center gap-2">
+                const start = Math.max(2, page - 1);
+                const end = Math.min(totalEstimatedPages - 1, page + 1);
+                
+                for (let i = start; i <= end; i++) {
+                   if (i === 1) continue; 
+                   showPages.push(i);
+                }
+
+                if (page < totalEstimatedPages - 2) showPages.push("...");
+                
+                if (totalEstimatedPages > 1) showPages.push(totalEstimatedPages);
+
+                return showPages.map((p, i) => (
+                    p === "..." ? (
+                         <div key={i} className="flex h-9 w-9 items-center justify-center">
+                            <span className="text-zinc-500 text-sm">...</span>
+                            <span className="sr-only">More pages</span>
+                         </div>
+                    ) : (
+                      <button
+                        key={i}
+                        onClick={() => typeof p === 'number' && setPage(p as number)}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium transition-colors ${
+                          p === page
+                            ? "border border-zinc-700 bg-zinc-800 text-white shadow-sm" 
+                            : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                ));
+              })()}
+            </div>
+
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setPage(p => p + 1)}
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-1 pl-4 pr-2.5 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none"
             >
-              ‹
+              <span>Next</span>
+              <ChevronRight className="h-4 w-4" />
             </button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(page => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                  currentPage === page 
-                    ? "bg-zinc-100 text-zinc-900" 
-                    : "text-zinc-400 hover:bg-zinc-800"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              ›
-            </button>
-          </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
 
 /* ----------------------- Favorite Card Component ----------------------- */
-function FavoriteCryptoCard({ coin, onUnfavorite }: { coin: CryptoCoin; onUnfavorite: () => void }) {
-  const positive = coin.change24h >= 0;
+function FavoriteCryptoCard({ coin, currency, onUnfavorite }: { coin: CoinGeckoCoin; currency: Currency; onUnfavorite: () => void }) {
+  const positive = coin.price_change_percentage_24h >= 0;
   const chartColor = positive ? "#22c55e" : "#ef4444";
-  const data = coin.sparkline.map((v, i) => ({ x: i, y: v }));
+  const data = (coin.sparkline_in_7d?.price || []).map((v, i) => ({ x: i, y: v }));
+  
+  const formatRawPrice = (num: number) => {
+     const sym = CURRENCIES[currency].symbol;
+     return `${sym}${num.toLocaleString(undefined, { maximumFractionDigits: num < 1 ? 5 : 2 })}`;
+  };
 
   return (
-    <div className="relative rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50 p-4 overflow-hidden">
+    <div className="relative rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50 p-4 overflow-hidden group">
       {/* Background gradient */}
-      <div className={`absolute inset-0 opacity-20 bg-gradient-to-br ${positive ? "from-emerald-500/20" : "from-rose-500/20"} to-transparent`} />
+      <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${positive ? "from-emerald-500/20" : "from-rose-500/20"} to-transparent`} />
       
       {/* Header */}
       <div className="relative flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="text-xs text-zinc-500 uppercase tracking-wider">{coin.symbol}USDT</div>
+            <Image src={coin.image} width={18} height={18} alt="icon" className="rounded-full" />
+            <div className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">{coin.symbol}</div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button 
             onClick={onUnfavorite}
-            className="p-1 rounded hover:bg-zinc-700/50 transition-colors"
+            className="p-1 rounded hover:bg-zinc-700/50 transition-colors text-amber-400"
           >
-            <Star size={14} className="text-zinc-100 fill-zinc-100" />
+            <Star size={16} className="fill-amber-400" />
           </button>
-          <button className="text-zinc-500 hover:text-zinc-300">⋮</button>
         </div>
       </div>
 
       {/* Coin Info */}
       <div className="relative">
-        <div className="text-lg font-bold text-white mb-1">{coin.name}</div>
-        <div className="text-2xl font-bold text-white">
-          ${coin.price.toLocaleString(undefined, { maximumFractionDigits: coin.price < 1 ? 4 : 2 })}
+        <div className="text-lg font-bold text-white mb-0.5">{coin.name}</div>
+        <div className="text-2xl font-bold text-white tracking-tight">
+          {formatRawPrice(coin.current_price)}
         </div>
         <div className={`text-sm font-medium mt-1 ${positive ? "text-emerald-400" : "text-rose-400"}`}>
-          {positive ? "+" : ""}{coin.change24h.toFixed(2)}%
+          {positive ? "+" : ""}{coin.price_change_percentage_24h?.toFixed(2)}%
         </div>
       </div>
 
       {/* Chart */}
-      <div className="absolute right-0 bottom-0 w-32 h-16 opacity-60">
+      <div className="absolute right-0 bottom-0 w-32 h-16 opacity-40 group-hover:opacity-60 transition-opacity">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
             <defs>
@@ -385,20 +521,27 @@ function FavoriteCryptoCard({ coin, onUnfavorite }: { coin: CryptoCoin; onUnfavo
 /* ----------------------- Mini Sparkline Component ----------------------- */
 function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }) {
   const chartData = data.map((v, i) => ({ x: i, y: v }));
-  const color = positive ? "#22c55e" : "#ef4444";
+  const color = positive ? "#10b981" : "#ef4444"; // emerald-500 : red-500
+  const gradientId = `spark-grad-${positive ? "pos" : "neg"}`;
   
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={chartData} margin={{ left: 0, right: 0, top: 2, bottom: 2 }}>
-        <Line
+      <AreaChart data={chartData} margin={{ left: 0, right: 0, top: 2, bottom: 2 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+            <stop offset="90%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area
           type="monotone"
           dataKey="y"
           stroke={color}
           strokeWidth={1.5}
-          dot={false}
+          fill={`url(#${gradientId})`}
           isAnimationActive={false}
         />
-      </LineChart>
+      </AreaChart>
     </ResponsiveContainer>
   );
 }
