@@ -469,7 +469,7 @@ function FavoriteCryptoCard({ coin, currency, onUnfavorite }: { coin: CoinGeckoC
       </div>
 
       {/* Main Value */}
-      <div className="z-10 mt-auto mb-4 flex flex-col items-start">
+      <div className="z-10 my-auto flex flex-col items-start">
         <div className="text-zinc-500 text-xs font-medium mb-1">Current Price</div>
         <div className="text-3xl font-bold text-white tracking-tight mb-1">
           {formatRawPrice(coin.current_price)}
