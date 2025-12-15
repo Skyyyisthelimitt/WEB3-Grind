@@ -11,6 +11,8 @@ import login3 from "../images/login3.png";
 import login4 from "../images/login4.png";
 import logo from "../images/loginlogo.png";
 
+import DotGrid from "../components/DotGrid/DotGrid";
+
 const slides = [
   {
     image: login1,
@@ -80,13 +82,28 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-grid-bg min-h-screen flex items-center justify-center p-4">
+    <div className="relative min-h-screen flex items-center justify-center p-4 bg-zinc-950 overflow-hidden">
+      {/* Interactive Dot Grid Background */}
+      <div className="absolute inset-0 z-0">
+        <DotGrid
+          dotSize={3}
+          gap={40}
+          baseColor="#3f3f46"
+          activeColor="#1e40af"
+          proximity={200}
+          shockRadius={250}
+          shockStrength={5}
+          resistance={750}
+          returnDuration={1.5}
+        />
+      </div>
+
       {/* Main Login Container */}
-      <div className="login-card-glow relative z-[1] w-full max-w-6xl rounded-2xl border border-white/15 shadow-[0_0_70px_rgba(255,255,255,0.2)]">
-        <div className="rounded-2xl overflow-hidden bg-zinc-900/80 backdrop-blur-sm">
+      <div className="login-card-glow relative z-[1] w-full max-w-6xl rounded-2xl border border-white/10 shadow-2xl backdrop-blur-sm bg-black/40">
+        <div className="rounded-2xl overflow-hidden">
           <div className="flex min-h-[600px]">
             {/* Left Section - Login Form */}
-            <div className="relative w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
+            <div className="relative w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white/95 backdrop-blur-xl">
               {/* Logo - Top Left */}
               <div className="absolute top-12 left-12 lg:top-3 lg:left-3">
                 <div className="relative w-14 h-14">
