@@ -443,7 +443,7 @@ function FavoriteCryptoCard({ coin, currency, onUnfavorite }: { coin: CoinGeckoC
   };
 
   return (
-    <div className="relative flex flex-col justify-between h-[220px] rounded-3xl bg-[#0f0f11] border border-zinc-800 p-6 overflow-hidden group hover:border-zinc-600 transition-all shadow-xl shadow-black/20 text-left">
+    <div className="relative flex flex-col h-[220px] rounded-3xl bg-[#0f0f11] border border-zinc-800 p-6 overflow-hidden group hover:border-zinc-600 transition-all shadow-xl shadow-black/20 text-left">
       
       {/* Header */}
       <div className="flex items-start justify-between z-10 w-full">
@@ -469,7 +469,7 @@ function FavoriteCryptoCard({ coin, currency, onUnfavorite }: { coin: CoinGeckoC
       </div>
 
       {/* Main Value */}
-      <div className="z-10 my-auto flex flex-col items-start">
+      <div className="z-10 mt-2 flex flex-col items-start">
         <div className="text-zinc-500 text-xs font-medium mb-1">Current Price</div>
         <div className="text-3xl font-bold text-white tracking-tight mb-1">
           {formatRawPrice(coin.current_price)}
