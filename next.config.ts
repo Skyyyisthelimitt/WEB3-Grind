@@ -23,6 +23,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "public.bnbstatic.com",
       },
+      {
+        protocol: "https",
+        hostname: "oldjgbqaqofswiybnsvu.supabase.co",
+      },
     ],
   },
 };

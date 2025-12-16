@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
@@ -36,11 +36,18 @@ export default function EditProfileModal({ isOpen, onClose, profile, onProfileUp
     avatar_url: profile?.avatar_url || "",
   });
 
-  // Reset form when profile changes (e.g. when opening modal)
-  // But doing this in useEffect might cause loops or issues if not careful.
-  // Instead we can initialize form state when modal opens or just rely on key.
-  // For simplicity, we'll sync manually or rely on `profile` key prop in parent.
-  
+  // Sync form data when profile changes or modal opens
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || "",
+        x_handle: profile.x_handle || "",
+        discord_handle: profile.discord_handle || "",
+        role: profile.role || "",
+        avatar_url: profile.avatar_url || "",
+      });
+    }
+  }, [profile, isOpen]);
   if (!isOpen) return null;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,39 +153,7 @@ export default function EditProfileModal({ isOpen, onClose, profile, onProfileUp
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-zinc-400">Role</label>
-            <input
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="w-full bg-zinc-950/50 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-              placeholder="e.g. Founder"
-            />
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-400">X Handle</label>
-              <input
-                name="x_handle"
-                value={formData.x_handle}
-                onChange={handleInputChange}
-                className="w-full bg-zinc-950/50 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                placeholder="@handle"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-400">Discord</label>
-              <input
-                name="discord_handle"
-                value={formData.discord_handle}
-                onChange={handleInputChange}
-                className="w-full bg-zinc-950/50 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                placeholder="username"
-              />
-            </div>
-          </div>
 
           <div className="flex gap-3 mt-8 pt-4">
             <button

@@ -528,7 +528,7 @@ useEffect(() => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-               {greeting}, <span className="text-white">{profile?.username || "Guest"}</span>
+               {greeting}, <span className="text-white">{profile?.full_name || profile?.username || "Guest"}</span>
             </h1>
             <div className="text-zinc-500 text-sm">Welcome back to your dashboard.</div>
           </div>
@@ -795,6 +795,12 @@ useEffect(() => {
         </div>
       </div>
     </div>
+      <EditProfileModal 
+        isOpen={isEditProfileOpen} 
+        onClose={() => setIsEditProfileOpen(false)} 
+        profile={profile}
+        onProfileUpdate={fetchProfile}
+      />
     </div>
   );
 }
