@@ -126,7 +126,7 @@ const seedCollabs: Collab[] = [
 
 /* --------------------------- Page --------------------------- */
 export default function DashboardPage() {
-  const [q, setQ] = useState("");
+
 
   // whitelists
   const [wls, setWls] = useState<WL[]>([]);
@@ -235,11 +235,12 @@ useEffect(() => {
         return new Date(Date.UTC(year || 2000, (month || 1) - 1, day || 1, 23, 59, 59));
       }
       
-      if (mintTime && mintTimezone) {
+      if (mintTime) {
+        const tz = mintTimezone || "UTC";
         // Parse time (HH:MM format)
         const [hours, minutes] = mintTime.split(":").map(Number);
         if (!isNaN(hours) && !isNaN(minutes)) {
-          const sourceOffset = timezoneOffsets[mintTimezone] ?? 0;
+          const sourceOffset = timezoneOffsets[tz] ?? 0;
           // Create UTC date: treat the input as if it's in the source timezone, then convert to UTC
           const sourceDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
           const utcDateTime = new Date(sourceDateTime.getTime() - (sourceOffset * 60 * 60 * 1000));
@@ -384,8 +385,9 @@ useEffect(() => {
         let phDate = w.mintDate;
         let phTime = "";
         
-        if (w.mintTime && w.mintTimezone && w.mintDate) {
-          const converted = convertToLocalDateTime(w.mintDate, w.mintTime, w.mintTimezone);
+        if (w.mintTime && w.mintDate) {
+          const tz = w.mintTimezone || "UTC";
+          const converted = convertToLocalDateTime(w.mintDate, w.mintTime, tz);
           phDate = converted.date;
           phTime = converted.time;
         }
@@ -447,16 +449,7 @@ useEffect(() => {
     return needsAction.slice(start, start + collabPageSize);
   }, [needsAction, collabPage, showCollabPagination]);
 
-  const filteredWL = useMemo(() => {
-    if (!q.trim()) return wls;
-    const s = q.toLowerCase();
-    return wls.filter((w) =>
-      [w.project ?? "", w.category ?? "", w.wallets ?? "", w.notes ?? ""]
-        .join(" ")
-        .toLowerCase()
-        .includes(s)
-    );
-  }, [wls, q]);
+
 
   const [dailyQuote, setDailyQuote] = useState<{ text: string; author?: string } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(true);
@@ -492,19 +485,7 @@ useEffect(() => {
         <div className="h-full w-full max-w-[1500px] mx-auto px-4 md:px-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-white tracking-tight shrink-0">Dashboard</h1>
           
-          {/* Central Search Bar */}
-          <div className="flex-1 max-w-md mx-6 relative hidden md:block">
-            <Search01Icon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search or type a command"
-              className="w-full pl-10 pr-12 py-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700/80 transition-all font-medium"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-50">
-              <span className="text-[10px] font-medium text-zinc-400 bg-zinc-800/50 px-1.5 py-0.5 rounded border border-zinc-700/50">⌘ F</span>
-            </div>
-          </div>
+          {/* Central Search Bar Removed */}
 
           {/* Right: Actions + Bell + Profile */}
           <div className="flex items-center gap-3 shrink-0">
@@ -584,7 +565,7 @@ useEffect(() => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card 
               title="Collabs — Action Required" 
-              className="h-[510px]" 
+              className="h-[530px]" 
               badgeCount={needsAction.length}
               icon={<Agreement01Icon size={16} />}
               tone="indigo"
@@ -671,7 +652,7 @@ useEffect(() => {
 
             <Card 
               title="WL Summary" 
-              className="h-[510px]"
+              className="h-[530px]"
               icon={<PieChartIcon size={16} />}
               tone="violet"
             >
@@ -745,7 +726,7 @@ useEffect(() => {
 
             <Card 
               title="Upcoming Mints" 
-              className="h-[510px]"
+              className="h-[530px]"
               icon={<AlarmClockIcon size={16} />}
               tone="emerald"
             >
@@ -808,7 +789,7 @@ useEffect(() => {
               )}
             </div>
           </Card>
-          <MiniCalendar wls={filteredWL} />
+          <MiniCalendar wls={wls} />
         </div>
       </div>
     </div>
