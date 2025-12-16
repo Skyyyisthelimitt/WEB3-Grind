@@ -19,6 +19,7 @@ type ChainConfig = {
   nativeDecimals: number;
   coingeckoId: string;
   color: string;
+  logo: string;
 };
 
 const CHAIN_CONFIGS: Record<string, ChainConfig> = {
@@ -31,6 +32,7 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
     nativeDecimals: 18,
     coingeckoId: "ethereum",
     color: "#627EEA",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png",
   },
   base: {
     name: "Base",
@@ -41,6 +43,7 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
     nativeDecimals: 18,
     coingeckoId: "ethereum",
     color: "#0052FF",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png",
   },
   arbitrum: {
     name: "Arbitrum",
@@ -51,6 +54,7 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
     nativeDecimals: 18,
     coingeckoId: "ethereum",
     color: "#28A0F0",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/info/logo.png",
   },
   optimism: {
     name: "Optimism",
@@ -61,6 +65,7 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
     nativeDecimals: 18,
     coingeckoId: "ethereum",
     color: "#FF0420",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/info/logo.png",
   },
   polygon: {
     name: "Polygon",
@@ -71,6 +76,7 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
     nativeDecimals: 18,
     coingeckoId: "matic-network",
     color: "#8247E5",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/info/logo.png",
   },
 };
 
@@ -267,7 +273,7 @@ export async function GET(req: NextRequest) {
     chain: string;
     chainName: string;
     color: string;
-    native: { symbol: string; name: string; balance: string };
+    native: { symbol: string; name: string; balance: string; logo?: string };
     tokens: TokenBalance[];
   }[] = [];
 
@@ -285,6 +291,7 @@ export async function GET(req: NextRequest) {
           symbol: config.nativeSymbol,
           name: config.nativeName,
           balance: native,
+          logo: config.logo,
         },
         tokens,
       });
@@ -302,6 +309,7 @@ export async function GET(req: NextRequest) {
         symbol: "SOL",
         name: "Solana",
         balance: native,
+        logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png",
       },
       tokens,
     });

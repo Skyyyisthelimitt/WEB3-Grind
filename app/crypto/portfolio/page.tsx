@@ -19,6 +19,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Tooltip,
 } from "recharts";
 
 // RainbowKit/Wagmi imports
@@ -50,7 +51,12 @@ type ChainBalance = {
   chain: string;
   chainName: string;
   color: string;
-  native: { symbol: string; name: string; balance: string };
+  native: { 
+    symbol: string; 
+    name: string; 
+    balance: string; 
+    logo?: string; 
+  };
   tokens: {
     contractAddress: string;
     tokenBalance: string;
@@ -78,10 +84,54 @@ const CHAIN_COLORS: Record<string, string> = {
 
 /* ----------------------- Demo Data for Initial State ----------------------- */
 const DEMO_HOLDINGS: TokenHolding[] = [
-  { id: "eth-1", symbol: "ETH", name: "Ethereum", balance: 2.5, price: 3650, value: 9125, change24h: 1.32, chain: "ethereum", chainColor: "#627EEA" },
-  { id: "sol-1", symbol: "SOL", name: "Solana", balance: 15, price: 225, value: 3375, change24h: -0.84, chain: "solana", chainColor: "#9945FF" },
-  { id: "arb-1", symbol: "ARB", name: "Arbitrum", balance: 500, price: 1.85, value: 925, change24h: 3.21, chain: "arbitrum", chainColor: "#28A0F0" },
-  { id: "usdc-1", symbol: "USDC", name: "USD Coin", balance: 1500, price: 1.00, value: 1500, change24h: 0.01, chain: "base", chainColor: "#0052FF" },
+  { 
+    id: "eth-1", 
+    symbol: "ETH", 
+    name: "Ethereum", 
+    balance: 2.5, 
+    price: 3650, 
+    value: 9125, 
+    change24h: 1.32, 
+    chain: "ethereum", 
+    chainColor: "#627EEA",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png" 
+  },
+  { 
+    id: "sol-1", 
+    symbol: "SOL", 
+    name: "Solana", 
+    balance: 15, 
+    price: 225, 
+    value: 3375, 
+    change24h: -0.84, 
+    chain: "solana", 
+    chainColor: "#9945FF",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png" 
+  },
+  { 
+    id: "arb-1", 
+    symbol: "ARB", 
+    name: "Arbitrum", 
+    balance: 500, 
+    price: 1.85, 
+    value: 925, 
+    change24h: 3.21, 
+    chain: "arbitrum", 
+    chainColor: "#28A0F0",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/info/logo.png" 
+  },
+  { 
+    id: "usdc-1", 
+    symbol: "USDC", 
+    name: "USD Coin", 
+    balance: 1500, 
+    price: 1.00, 
+    value: 1500, 
+    change24h: 0.01, 
+    chain: "base", 
+    chainColor: "#0052FF",
+    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913/logo.png" 
+  },
 ];
 
 /* ----------------------- Wallet Button Component ----------------------- */
@@ -298,6 +348,9 @@ export default function PortfolioPage() {
   const { disconnect: disconnectEvm } = useDisconnect();
   const { publicKey: solanaPublicKey, disconnect: disconnectAdapter, connected: isSolanaConnected, select } = useWallet();
   const solanaAddress = solanaPublicKey?.toBase58();
+  
+  // Determine if we're showing demo or real data
+  const isDemo = !isEvmConnected && !isSolanaConnected;
 
   // Custom disconnect handler that also resets selection
   const disconnectSolana = useCallback(async () => {
@@ -386,6 +439,7 @@ export default function PortfolioPage() {
             change24h,
             chain: chainData.chain,
             chainColor: chainData.color,
+            logo: chainData.native.logo,
           });
         }
 
@@ -472,6 +526,11 @@ export default function PortfolioPage() {
     return weightedChange;
   }, [holdings, totalValue]);
 
+  const bestAsset = useMemo(() => {
+    if (holdings.length === 0) return null;
+    return [...holdings].sort((a, b) => b.change24h - a.change24h)[0];
+  }, [holdings]);
+
   // Chain distribution for pie chart
   const chainDistribution = useMemo(() => {
     const distribution: Record<string, { value: number; color: string; name: string }> = {};
@@ -485,16 +544,19 @@ export default function PortfolioPage() {
       }
       distribution[h.chain].value += h.value;
     }
-    return Object.entries(distribution).map(([chain, data]) => ({
-      chain,
-      ...data,
-      percentage: totalValue > 0 ? (data.value / totalValue) * 100 : 0,
-    }));
+    return Object.entries(distribution)
+      .map(([chain, data]) => ({
+        chain,
+        ...data,
+        percentage: totalValue > 0 ? (data.value / totalValue) * 100 : 0,
+      }))
+      .sort((a, b) => b.value - a.value);
   }, [holdings, totalValue]);
 
   // Filter and sort holdings
   const filteredHoldings = useMemo(() => {
-    let result = [...holdings];
+    // Determine source data: Demo or Real
+    let result = [...(isDemo ? DEMO_HOLDINGS : holdings)];
 
     // Search filter
     if (searchQuery) {
@@ -515,7 +577,7 @@ export default function PortfolioPage() {
     result = result.filter(h => h.value > 0.01);
 
     return result;
-  }, [holdings, searchQuery, chainFilter]);
+  }, [holdings, searchQuery, chainFilter, isDemo]);
 
   // Dynamic chain filter list - shows only chains with holdings, or defaults when no wallet
   const availableChains = useMemo(() => {
@@ -547,9 +609,7 @@ export default function PortfolioPage() {
     return `${balance.toFixed(8)} ${symbol}`;
   };
 
-  // Determine if we're showing demo or real data
-  const isDemo = !isEvmConnected && !isSolanaConnected;
-  const displayHoldings = isDemo ? DEMO_HOLDINGS : filteredHoldings;
+  const displayHoldings = filteredHoldings;
   const displayTotalValue = isDemo ? DEMO_HOLDINGS.reduce((sum, h) => sum + h.value, 0) : totalValue;
 
   return (
@@ -587,102 +647,247 @@ export default function PortfolioPage() {
       {/* Main Content Area */}
       <div className="flex-1 w-full max-w-[1500px] mx-auto px-4 md:px-6 pt-6 space-y-6">
         {/* Subtitle */}
-        {isDemo && (
-          <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 inline-block">
-            <p className="text-amber-400 text-sm">Connect your wallet to view real holdings</p>
-          </div>
-        )}
-        {!isDemo && (
-          <p className="text-zinc-500 text-sm">{holdings.length} assets across {chainDistribution.length} chains</p>
-        )}
-
-        {/* Portfolio Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Total Value */}
-        <div className="bg-zinc-900/40 rounded-2xl border border-zinc-800/60 p-5 md:col-span-2">
-          <div className="text-zinc-400 text-sm mb-1">Net Worth</div>
-          <div className="text-3xl font-bold text-white">
-            {formatValue(displayTotalValue)}
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <span
-              className={`flex items-center gap-1 text-sm font-medium ${
-                totalChange24h >= 0 ? "text-emerald-400" : "text-rose-400"
-              }`}
-            >
-              {totalChange24h >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-              {totalChange24h >= 0 ? "+" : ""}{totalChange24h.toFixed(2)}%
-            </span>
-            <span className="text-zinc-500 text-sm">24h</span>
-          </div>
-          {isDemo && (
-            <div className="mt-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <p className="text-amber-400 text-xs">Demo data shown. Connect wallet for real balances.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Chain Distribution Mini Chart */}
-        <div className="bg-zinc-900/40 rounded-2xl border border-zinc-800/60 p-5 md:col-span-2">
-          <div className="text-zinc-400 text-sm mb-3">Chain Distribution</div>
-          <div className="flex items-center gap-4">
-            <div className="w-24 h-24">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={isDemo 
-                      ? [
-                          { chain: "ethereum", value: 60, color: "#627EEA" },
-                          { chain: "solana", value: 25, color: "#9945FF" },
-                          { chain: "arbitrum", value: 10, color: "#28A0F0" },
-                          { chain: "base", value: 5, color: "#0052FF" },
-                        ]
-                      : chainDistribution
-                    }
-                    dataKey="value"
-                    nameKey="chain"
-                    innerRadius={25}
-                    outerRadius={40}
-                    paddingAngle={4}
-                    stroke="transparent"
-                  >
-                    {(isDemo
-                      ? [
-                          { chain: "ethereum", color: "#627EEA" },
-                          { chain: "solana", color: "#9945FF" },
-                          { chain: "arbitrum", color: "#28A0F0" },
-                          { chain: "base", color: "#0052FF" },
-                        ]
-                      : chainDistribution
-                    ).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex-1 space-y-2">
-              {(isDemo
-                ? [
-                    { chain: "ethereum", name: "Ethereum", percentage: 60, color: "#627EEA" },
-                    { chain: "solana", name: "Solana", percentage: 25, color: "#9945FF" },
-                    { chain: "arbitrum", name: "Arbitrum", percentage: 10, color: "#28A0F0" },
-                    { chain: "base", name: "Base", percentage: 5, color: "#0052FF" },
-                  ]
-                : chainDistribution
-              ).slice(0, 4).map((chain) => (
-                <div key={chain.chain} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chain.color }} />
-                    <span className="text-zinc-300 text-sm">{chain.name}</span>
+        {/* Portfolio Summary Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* 1. Net Worth + Performance */}
+          <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 flex flex-col group hover:border-zinc-700/80 transition-all h-[240px]">
+             
+             {/* Header with Icon */}
+             <div className="flex items-start justify-between mb-4">
+               <div>
+                  <div className="text-zinc-400 text-sm font-medium">Net Worth</div>
+                  <div className="text-4xl font-bold text-white tracking-tight mt-2">
+                    {formatValue(displayTotalValue)}
                   </div>
-                  <span className="text-zinc-400 text-sm">{chain.percentage.toFixed(1)}%</span>
-                </div>
-              ))}
+               </div>
+               
+               {/* Stylish Wallet Icon - Bigger */}
+               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/10">
+                  <Wallet className="text-indigo-400" size={28} />
+               </div>
+             </div>
+
+             {/* 24h Change Badge - Bigger Text & Moved Up */}
+             <div className="mb-6">
+               <div className="flex items-center gap-3">
+                 <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-bold ${
+                   totalChange24h >= 0 
+                     ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                     : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                 }`}>
+                   {totalChange24h >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                   {Math.abs(totalChange24h).toFixed(2)}%
+                 </div>
+                 <div className={`text-base font-bold ${totalChange24h >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {totalChange24h >= 0 ? "+" : ""}{formatValue(displayTotalValue * (totalChange24h/100))}
+                 </div>
+                 <span className="text-zinc-500 text-xs font-bold tracking-wider uppercase">24h Change</span>
+               </div>
+             </div>
+
+             {/* Best Asset - Moved Here */}
+             <div className="mt-auto pt-3 border-t border-zinc-800/50 relative z-10">
+                 <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold mb-2">Best Asset Today</div>
+                 {bestAsset ? (
+                   <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {bestAsset.logo ? (
+                            <img src={bestAsset.logo} alt="" className="w-6 h-6 rounded-full" />
+                        ) : (
+                            <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-400">{bestAsset.symbol[0]}</div>
+                        )}
+                        <div>
+                            <div className="text-zinc-200 text-sm font-bold leading-none">{bestAsset.symbol}</div>
+                            <div className="text-zinc-500 text-[10px] leading-none mt-0.5">{bestAsset.name}</div>
+                        </div>
+                      </div>
+                      <div className="text-emerald-400 text-sm font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        +{bestAsset.change24h.toFixed(2)}%
+                      </div>
+                   </div>
+                 ) : (
+                    <div className="text-zinc-500 text-xs">No data available</div>
+                 )}
+               </div>
+          </div>
+
+          {/* 2. Chain & Asset Distribution */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 flex flex-col h-[240px]">
+            <h3 className="text-zinc-300 font-semibold mb-3 text-sm">Chain & Asset Distrib.</h3>
+            
+            <div className="flex items-center gap-6 flex-1 mb-2 pl-4">
+               {/* Pie Chart - Bigger & Moved Right */}
+               <div className="relative w-32 h-32 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={isDemo 
+                          ? [
+                              { name: "ETH", value: 60, color: "#627EEA" },
+                              { name: "SOL", value: 25, color: "#9945FF" },
+                              { name: "ARB", value: 10, color: "#28A0F0" },
+                              { name: "BASE", value: 5, color: "#0052FF" },
+                            ]
+                          : chainDistribution.map(c => ({ name: c.chain.toUpperCase(), value: c.value, color: c.color }))
+                        }
+                        dataKey="value"
+                        innerRadius={40}
+                        outerRadius={60}
+                        paddingAngle={4}
+                        stroke="none"
+                        cornerRadius={4}
+                      >
+                        {(isDemo 
+                          ? [
+                              { color: "#627EEA" }, { color: "#9945FF" }, { color: "#28A0F0" }, { color: "#0052FF" }
+                            ] 
+                          : chainDistribution
+                        ).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            // Calculate value for Demo (since data.value is percentage) or use real value
+                            const val = isDemo ? (displayTotalValue * (data.value / 100)) : data.value;
+                            const pct = isDemo ? data.value : data.percentage;
+                            
+                            return (
+                              <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800 p-2 rounded-lg shadow-xl min-w-[100px]">
+                                 <div className="flex items-center gap-1.5 mb-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: data.color }} />
+                                    <span className="text-xs font-semibold text-zinc-300">{data.name}</span>
+                                 </div>
+                                 <div className="text-sm font-bold text-white leading-none mb-0.5">
+                                   {formatValue(val)}
+                                 </div>
+                                 <div className="text-[10px] text-zinc-500 font-mono">
+                                   {pct.toFixed(1)}%
+                                 </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Text */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="text-xs font-bold text-zinc-500">
+                      {isDemo ? 4 : chainDistribution.length}
+                    </span>
+                  </div>
+               </div>
+               
+               {/* Chain List - Top 4 Only (No Scroll) */}
+               <div className="flex-1 pr-1 space-y-1">
+                 {(isDemo
+                    ? [
+                        { name: "Ethereum", percentage: 60, color: "#627EEA" },
+                        { name: "Solana", percentage: 25, color: "#9945FF" },
+                        { name: "Arbitrum", percentage: 10, color: "#28A0F0" },
+                        { name: "Base", percentage: 5, color: "#0052FF" },
+                      ]
+                    : chainDistribution
+                  ).slice(0, 4).map((chain: any) => (
+                    <div key={chain.name || chain.chain} className="flex items-center justify-between text-sm hover:bg-zinc-800/40 px-1.5 py-1 rounded transition-colors group">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: chain.color }} />
+                        <span className="text-zinc-300 truncate group-hover:text-zinc-100 font-medium">{chain.name}</span>
+                      </div>
+                      <span className="text-zinc-500 font-mono text-xs shrink-0">{chain.percentage.toFixed(0)}%</span>
+                    </div>
+                  ))}
+               </div>
+            </div>
+
+            {/* Asset Breakdown (Bottom) - Bigger Text */}
+            <div className="pt-3 border-t border-zinc-800/50 flex gap-6 mt-auto">
+                 <div className="flex-1 space-y-2">
+                    <div className="flex justify-between items-end">
+                      <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Tokens</span>
+                      <span className="text-sm font-bold text-zinc-100">{formatValue(displayTotalValue)}</span>
+                    </div>
+                    {/* Progress Bar for Tokens */}
+                    <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-500 w-full" />
+                    </div>
+                 </div>
+
+                 <div className="flex-1 space-y-2 opacity-60">
+                    <div className="flex justify-between items-end">
+                       <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">NFTs</span>
+                       <span className="text-sm font-bold text-zinc-500">$0</span>
+                    </div>
+                     <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                       <div className="h-full bg-pink-500 w-0" />
+                     </div>
+                 </div>
+            </div>
+          </div>
+
+          {/* 3. Recent Activity (New Card) */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 flex flex-col h-[240px]">
+            <div className="flex items-center justify-between mb-3">
+                <h3 className="text-zinc-300 font-semibold text-sm">Recent Activity</h3>
+                <button className="text-xs text-zinc-500 hover:text-white transition-colors">View All</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-1 space-y-1">
+               {[
+                 { type: "mint", title: "Minted Azuki #42", time: "2h ago", value: "-0.5 ETH", chain: "ethereum", tx: "0x123...abc" },
+                 { type: "swap", title: "Swapped USDC for SOL", time: "5h ago", value: "+15 SOL", chain: "solana", tx: "5h7...9kL" },
+                 { type: "list", title: "Listed Bored Ape", time: "1d ago", value: "88 ETH", chain: "ethereum", tx: "0x456...def" },
+                 { type: "send", title: "Sent 100 USDC", time: "2d ago", value: "-100 USDC", chain: "base", tx: "0x789...ghi" },
+               ].map((activity, idx) => (
+                  <div key={idx} className="group flex items-center justify-between p-2 rounded-lg hover:bg-zinc-800/40 transition-colors">
+                      <div className="flex items-center gap-3">
+                         <div className={`w-9 h-9 rounded-full flex items-center justify-center border border-white/5 shrink-0 ${
+                             activity.type === "mint" ? "bg-purple-500/10 text-purple-400" :
+                             activity.type === "swap" ? "bg-blue-500/10 text-blue-400" :
+                             activity.type === "list" ? "bg-amber-500/10 text-amber-400" :
+                             "bg-zinc-500/10 text-zinc-400"
+                         }`}>
+                             {/* Icons based on type */}
+                             {activity.type === "mint" ? "⚡" : activity.type === "swap" ? "🔄" : activity.type === "list" ? "🏷️" : "📤"}
+                         </div>
+                         <div className="min-w-0">
+                            <div className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate">{activity.title}</div>
+                            <div className="text-xs text-zinc-500">{activity.time}</div>
+                         </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 pl-2 shrink-0">
+                          <div className={`text-sm font-medium ${
+                              activity.value.startsWith("+") ? "text-emerald-400" : "text-zinc-400"
+                          }`}>
+                              {activity.value}
+                          </div>
+                          
+                          {/* Link on Right */}
+                          <a 
+                             href={activity.chain === "solana" ? `https://solscan.io/tx/${activity.tx}` : `https://etherscan.io/tx/${activity.tx}`} 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="text-zinc-600 hover:text-indigo-400 transition-colors p-1 rounded-md hover:bg-zinc-700/50"
+                             title="View Transaction"
+                         >
+                             <ExternalLink size={14} />
+                         </a>
+                      </div>
+                  </div>
+               ))}
+               {!isDemo && (
+                   <div className="p-4 text-center text-zinc-500 text-xs mt-4">
+                       Connect wallet indexer integration coming soon.
+                   </div>
+               )}
             </div>
           </div>
         </div>
-      </div>
 
       {/* Search and Filter Controls */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -800,19 +1005,32 @@ export default function PortfolioPage() {
                     key={holding.id}
                     className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors"
                   >
-                    <td className="px-5 py-4">
+                      <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
-                          style={{
-                            backgroundColor: `${holding.chainColor}20`,
-                            color: holding.chainColor,
-                          }}
+                          className="w-10 h-10 rounded-full flex items-center justify-center relative group"
                         >
+                          {/* Glow effect on border */}
+                          <div 
+                             className="absolute inset-0 rounded-full border-2 opacity-50 group-hover:opacity-100 transition-opacity"
+                             style={{
+                               borderColor: holding.chainColor,
+                               boxShadow: `0 0 10px ${holding.chainColor}40`
+                             }}
+                          />
+                          
                           {holding.logo ? (
-                            <img src={holding.logo} alt={holding.symbol} className="w-6 h-6 rounded-full" />
+                            <img src={holding.logo} alt={holding.symbol} className="w-8 h-8 rounded-full relative z-10" />
                           ) : (
-                            holding.symbol.slice(0, 2)
+                            <div 
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold relative z-10"
+                              style={{
+                                backgroundColor: `${holding.chainColor}20`,
+                                color: holding.chainColor,
+                              }}
+                            >
+                              {holding.symbol.slice(0, 2)}
+                            </div>
                           )}
                         </div>
                         <div>
