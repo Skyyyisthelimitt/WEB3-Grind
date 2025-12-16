@@ -332,6 +332,14 @@ export default function PortfolioPage() {
     select(null); // Reset selected wallet so next connection attempt works fresh
   }, [disconnectAdapter, select]);
 
+  // Refs for aborting fetches
+  const balancesAbortRef = useRef<AbortController | null>(null);
+  const activitiesAbortRef = useRef<AbortController | null>(null);
+  
+  // Track connection status for async checks
+  const isConnectedRef = useRef(false);
+  isConnectedRef.current = isEvmConnected || isSolanaConnected;
+
   // Portfolio state
   const [holdings, setHoldings] = useState<TokenHolding[]>([]);
   const [loading, setLoading] = useState(false);
@@ -365,39 +373,41 @@ export default function PortfolioPage() {
     setNfts([]);
   }, [disconnectEvm]);
 
-  // LocalStorage persistence
-  useEffect(() => {
-    if (isEvmConnected || isSolanaConnected) {
-      localStorage.setItem("portfolio_connections", JSON.stringify({
-        evm: evmAddress || null,
-        solana: solanaAddress || null,
-      }));
-    } else {
-      localStorage.removeItem("portfolio_connections");
-    }
-  }, [isEvmConnected, isSolanaConnected, evmAddress, solanaAddress]);
+  // LocalStorage persistence removed to prevent ghost connections
+  // Connection status is now tracked via isConnectedRef for async safety
 
   // Fetch balances from API
 
   // Fetch balances from API
   const fetchBalances = useCallback(async () => {
-    if (!evmAddress && !solanaAddress) {
+    // Abort previous fetch immediately
+    if (balancesAbortRef.current) balancesAbortRef.current.abort();
+
+    // Strict check: Only use address if wallet is connected
+    const activeEvm = isEvmConnected ? evmAddress : null;
+    const activeSol = isSolanaConnected ? solanaAddress : null;
+
+    if (!activeEvm && !activeSol) {
       setHoldings([]);
       setNfts([]);
       return;
     }
 
+    const controller = new AbortController();
+    balancesAbortRef.current = controller;
+    const signal = controller.signal;
+
     setLoading(true);
     try {
-      console.log("Fetching balances for:", { evmAddress, solanaAddress });
+      console.log("Fetching balances for:", { evmAddress: activeEvm, solanaAddress: activeSol });
       const params = new URLSearchParams();
-      if (evmAddress) params.set("evmAddress", evmAddress);
-      if (solanaAddress) params.set("solanaAddress", solanaAddress);
+      if (activeEvm) params.set("evmAddress", activeEvm);
+      if (activeSol) params.set("solanaAddress", activeSol);
 
-      const balancesRes = await fetch(`/api/portfolio/balances?${params.toString()}`);
+      const balancesRes = await fetch(`/api/portfolio/balances?${params.toString()}`, { signal });
       
       // Fetch NFTs in parallel
-      const nftsRes = fetch(`/api/portfolio/nfts?${params.toString()}`).then(r => r.json()).catch(err => {
+      const nftsRes = fetch(`/api/portfolio/nfts?${params.toString()}`, { signal }).then(r => r.json()).catch(err => {
         console.error("NFT Fetch Error:", err);
         return { nfts: [] };
       });
@@ -432,7 +442,7 @@ export default function PortfolioPage() {
       console.log(`Fetching prices for ${allSymbols.length} assets...`);
 
       // Fetch prices
-      const pricesRes = await fetch(`/api/portfolio/prices?symbols=${allSymbols.join(",")}`);
+      const pricesRes = await fetch(`/api/portfolio/prices?symbols=${allSymbols.join(",")}`, { signal });
       const pricesData = await pricesRes.json();
       const prices = pricesData.prices || {};
 
@@ -486,33 +496,50 @@ export default function PortfolioPage() {
 
       // Sort by value descending
       newHoldings.sort((a, b) => b.value - a.value);
-      setHoldings(newHoldings);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error("Error fetching portfolio:", error);
+      newHoldings.sort((a, b) => b.value - a.value);
+      
+      // Final availability check before setting state
+      if (isConnectedRef.current) {
+        setHoldings(newHoldings);
+        setLastUpdated(new Date());
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error("Error fetching portfolio:", error);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [evmAddress, solanaAddress]);
+  }, [evmAddress, solanaAddress, isEvmConnected, isSolanaConnected]);
 
   // Fetch activities
   const fetchActivities = useCallback(async () => {
-    if (!evmAddress && !solanaAddress) {
+    // Abort previous fetch immediately
+    if (activitiesAbortRef.current) activitiesAbortRef.current.abort();
+
+    const activeEvm = isEvmConnected ? evmAddress : null;
+    const activeSol = isSolanaConnected ? solanaAddress : null;
+
+    if (!activeEvm && !activeSol) {
       setActivities([]);
       return;
     }
 
+    const controller = new AbortController();
+    activitiesAbortRef.current = controller;
+    const signal = controller.signal;
+
     setActivitiesLoading(true);
     try {
       const params = new URLSearchParams();
-      if (evmAddress) params.set("evmAddress", evmAddress);
-      if (solanaAddress) params.set("solanaAddress", solanaAddress);
+      if (activeEvm) params.set("evmAddress", activeEvm);
+      if (activeSol) params.set("solanaAddress", activeSol);
 
-      const res = await fetch(`/api/portfolio/activity?${params.toString()}`);
+      const res = await fetch(`/api/portfolio/activity?${params.toString()}`, { signal });
       const data = await res.json();
       
-      if (data.activities) {
+      if (data.activities && isConnectedRef.current) {
         setActivities(data.activities);
       }
     } catch (error) {
@@ -520,7 +547,7 @@ export default function PortfolioPage() {
     } finally {
       setActivitiesLoading(false);
     }
-  }, [evmAddress, solanaAddress]);
+  }, [evmAddress, solanaAddress, isEvmConnected, isSolanaConnected]);
 
   // Auto-fetch when wallets connect or address changes
   useEffect(() => {
