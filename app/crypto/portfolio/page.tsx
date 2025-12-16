@@ -100,6 +100,17 @@ type NFTHolding = {
   isListed: boolean;
 };
 
+type Activity = {
+  id: string;
+  type: 'mint' | 'swap' | 'send' | 'receive' | 'list' | 'sale' | 'unknown';
+  title: string;
+  timeAgo: string;
+  value?: string;
+  chain: string;
+  txHash: string;
+  explorerUrl: string;
+};
+
 /* ----------------------- Wallet Button Component ----------------------- */
 function WalletButton({
   type,
@@ -339,6 +350,10 @@ export default function PortfolioPage() {
   const [viewMode, setViewMode] = useState<"tokens" | "nfts">("tokens");
   const [nfts, setNfts] = useState<NFTHolding[]>([]);
   const [hideSpam, setHideSpam] = useState(true);
+  
+  // Activity state
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   // Custom disconnect handler for EVM
   const handleDisconnectEvm = useCallback(() => {
@@ -481,20 +496,49 @@ export default function PortfolioPage() {
     }
   }, [evmAddress, solanaAddress]);
 
+  // Fetch activities
+  const fetchActivities = useCallback(async () => {
+    if (!evmAddress && !solanaAddress) {
+      setActivities([]);
+      return;
+    }
+
+    setActivitiesLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (evmAddress) params.set("evmAddress", evmAddress);
+      if (solanaAddress) params.set("solanaAddress", solanaAddress);
+
+      const res = await fetch(`/api/portfolio/activity?${params.toString()}`);
+      const data = await res.json();
+      
+      if (data.activities) {
+        setActivities(data.activities);
+      }
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  }, [evmAddress, solanaAddress]);
+
   // Auto-fetch when wallets connect or address changes
   useEffect(() => {
     if ((isEvmConnected && evmAddress) || (isSolanaConnected && solanaAddress)) {
       fetchBalances();
+      fetchActivities();
     } else if (!isEvmConnected && !isSolanaConnected) {
       setHoldings([]);
       setNfts([]);
+      setActivities([]);
     }
-  }, [isEvmConnected, isSolanaConnected, evmAddress, solanaAddress, fetchBalances]);
+  }, [isEvmConnected, isSolanaConnected, evmAddress, solanaAddress, fetchBalances, fetchActivities]);
 
   // Refresh handler
   const _handleRefresh = () => {
     setRefreshing(true);
     fetchBalances();
+    fetchActivities();
   };
 
   // Copy handlers
@@ -901,10 +945,65 @@ export default function PortfolioPage() {
             
             <div className="flex-1 overflow-y-auto pr-1 space-y-1">
                {(isEvmConnected || isSolanaConnected) ? (
-                   <div className="flex flex-col items-center justify-center h-full text-center">
-                       <div className="text-zinc-500 text-sm">No recent activity</div>
-                       <div className="text-zinc-600 text-xs mt-1">Activity indexer coming soon</div>
-                   </div>
+                   activitiesLoading && activities.length === 0 ? (
+                       <div className="flex flex-col items-center justify-center h-full text-center">
+                           <div className="text-zinc-500 text-sm">Loading activity...</div>
+                       </div>
+                   ) : activities.length > 0 ? (
+                       activities.map((activity, idx) => (
+                          <div key={activity.id || idx} className="group flex items-center justify-between p-2 rounded-lg hover:bg-zinc-800/40 transition-colors">
+                              <div className="flex items-center gap-3">
+                                 <div className={`w-9 h-9 rounded-full flex items-center justify-center border border-white/5 shrink-0 ${
+                                     activity.type === "mint" ? "bg-purple-500/10 text-purple-400" :
+                                     activity.type === "swap" ? "bg-blue-500/10 text-blue-400" :
+                                     activity.type === "list" ? "bg-amber-500/10 text-amber-400" :
+                                     activity.type === "send" ? "bg-red-500/10 text-red-400" :
+                                     activity.type === "receive" ? "bg-green-500/10 text-green-400" :
+                                     "bg-zinc-500/10 text-zinc-400"
+                                 }`}>
+                                     {/* Icons based on type */}
+                                     {activity.type === "mint" ? "⚡" : 
+                                      activity.type === "swap" ? "🔄" : 
+                                      activity.type === "list" ? "🏷️" : 
+                                      activity.type === "send" ? "📤" :
+                                      activity.type === "receive" ? "📥" : "📋"}
+                                 </div>
+                                 <div className="min-w-0">
+                                    <div className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate w-32 md:w-48" title={activity.title}>
+                                        {activity.title}
+                                    </div>
+                                    <div className="text-xs text-zinc-500">{activity.timeAgo}</div>
+                                 </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3 pl-2 shrink-0">
+                                  {activity.value && (
+                                      <div className={`text-sm font-medium ${
+                                          activity.value.startsWith("+") ? "text-emerald-400" : 
+                                          activity.value.startsWith("-") ? "text-zinc-400" : "text-zinc-400"
+                                      }`}>
+                                          {activity.value}
+                                      </div>
+                                  )}
+                                  
+                                  {/* Link on Right */}
+                                  <a 
+                                     href={activity.explorerUrl}
+                                     target="_blank" 
+                                     rel="noopener noreferrer"
+                                     className="text-zinc-600 hover:text-indigo-400 transition-colors p-1 rounded-md hover:bg-zinc-700/50"
+                                     title="View Transaction"
+                                 >
+                                     <ExternalLink size={14} />
+                                 </a>
+                              </div>
+                          </div>
+                       ))
+                   ) : (
+                       <div className="flex flex-col items-center justify-center h-full text-center">
+                           <div className="text-zinc-500 text-sm">No recent activity</div>
+                       </div>
+                   )
                ) : (
                    <div className="flex flex-col items-center justify-center h-full text-center">
                        <div className="text-zinc-500 text-sm">Connect wallet to view activity</div>
