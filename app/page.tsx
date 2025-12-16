@@ -29,7 +29,7 @@ import {
 
 
 // Local images (PNGs)
-import pfp from "./images/khun.jpg";
+
 import btcIcon from "./images/btc.png";
 import ethIcon from "./images/eth.png";
 import solIcon from "./images/sol.png";
@@ -1007,13 +1007,17 @@ function ProfileCard({
       </button>
 
       <div className="flex items-center gap-5">
-        <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-2 border-white/10 ring-2 ring-white/5 shadow-lg shadow-black/20 shrink-0 bg-zinc-800">
-          <Image 
-             src={avatar_url || pfp} 
-             alt={displayName} 
-             fill 
-             className="object-cover" 
-          />
+        <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-2 border-white/10 ring-2 ring-white/5 shadow-lg shadow-black/20 shrink-0 bg-zinc-800 flex items-center justify-center">
+          {avatar_url ? (
+            <Image 
+               src={avatar_url} 
+               alt={displayName} 
+               fill 
+               className="object-cover" 
+            />
+          ) : (
+            <UserMultiple02Icon size={48} className="text-zinc-500" />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-zinc-100 text-2xl md:text-[26px] font-semibold leading-tight tracking-tight truncate">

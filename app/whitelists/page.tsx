@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search01Icon, Notification03Icon, Add01Icon, Delete01Icon, ArrowDown01Icon, Calendar01Icon, ArrowLeft01Icon, ArrowRight01Icon, Link01Icon, UserMultiple02Icon } from "hugeicons-react";
 import EditProfileModal from "../components/EditProfileModal";
-import pfp from "../images/khun.jpg";
+
 
 type Chain = "ETH" | "SOL" | "BTC" | "APE" | "BASE" | "ABS" | "MONAD" | "HYPER";
 type WLType = "GTD" | "FCFS" | "OG" | "WL";
