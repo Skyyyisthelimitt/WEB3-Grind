@@ -57,7 +57,7 @@ async function fetchSolanaActivity(address: string): Promise<Activity[]> {
   try {
     const response = await fetch(
       `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=15`,
-      { cache: 'no-store' } // Disable cache for debugging
+      { next: { revalidate: 30 } } // Cache for 30 seconds
     );
 
     if (!response.ok) {
@@ -66,20 +66,6 @@ async function fetchSolanaActivity(address: string): Promise<Activity[]> {
     }
 
     const transactions = await response.json();
-    
-    // DEBUG: Log the first transaction structure to see what we're working with
-    if (transactions.length > 0) {
-      console.log('--- DEBUG HELIUS TX ---');
-      console.log('Searching for address:', address);
-      console.log('Sample TX Type:', transactions[0].type);
-      console.log('Sample TX Native Transfers:', JSON.stringify(transactions[0].nativeTransfers, null, 2));
-      console.log('Sample TX Token Transfers:', JSON.stringify(transactions[0].tokenTransfers, null, 2));
-      console.log('-----------------------');
-    } else {
-      console.log('--- DEBUG HELIUS ---');
-      console.log('No transactions found for:', address);
-      console.log('--------------------');
-    }
     
     // Normalize address for comparison
     const searchAddr = address.toLowerCase();

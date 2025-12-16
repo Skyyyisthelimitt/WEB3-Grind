@@ -504,7 +504,6 @@ export default function PortfolioPage() {
     }
 
     setActivitiesLoading(true);
-    console.log("Fetching activities for:", { evmAddress, solanaAddress }); // DEBUG LOG
     try {
       const params = new URLSearchParams();
       if (evmAddress) params.set("evmAddress", evmAddress);
@@ -944,7 +943,7 @@ export default function PortfolioPage() {
                 <button className="text-xs text-zinc-500 hover:text-white transition-colors">View All</button>
             </div>
             
-            <div className="flex-1 overflow-y-auto pr-1 space-y-1">
+            <div className="flex-1 overflow-y-auto pr-1 space-y-1 custom-scrollbar">
                {(isEvmConnected || isSolanaConnected) ? (
                    activitiesLoading && activities.length === 0 ? (
                        <div className="flex flex-col items-center justify-center h-full text-center">

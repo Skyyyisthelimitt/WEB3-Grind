@@ -16,24 +16,30 @@ aside nav .submenu-sep {
 aside.w-20 {
   /* handled by Tailwind classes; keep for reference */
 }
-
 @layer utilities {
-  /* Custom scrollbar styling */
-  .scrollbar-thin {
+  /* Custom scrollbar styling (Shadcn-like) */
+  .custom-scrollbar {
     scrollbar-width: thin;
+    scrollbar-color: #3f3f46 transparent;
   }
 
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-track {
+  .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(39 39 42 / 0.6);
-    border-radius: 3px;
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #3f3f46; /* zinc-700 */
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #52525b; /* zinc-600 */
   }
 }
 
