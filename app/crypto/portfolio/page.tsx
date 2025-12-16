@@ -85,58 +85,6 @@ const CHAIN_COLORS: Record<string, string> = {
   optimism: "#FF0420",
 };
 
-/* ----------------------- Demo Data for Initial State ----------------------- */
-const DEMO_HOLDINGS: TokenHolding[] = [
-  { 
-    id: "eth-1", 
-    symbol: "ETH", 
-    name: "Ethereum", 
-    balance: 2.5, 
-    price: 3650, 
-    value: 9125, 
-    change24h: 1.32, 
-    chain: "ethereum", 
-    chainColor: "#627EEA",
-    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png" 
-  },
-  { 
-    id: "sol-1", 
-    symbol: "SOL", 
-    name: "Solana", 
-    balance: 15, 
-    price: 225, 
-    value: 3375, 
-    change24h: -0.84, 
-    chain: "solana", 
-    chainColor: "#9945FF",
-    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png" 
-  },
-  { 
-    id: "arb-1", 
-    symbol: "ARB", 
-    name: "Arbitrum", 
-    balance: 500, 
-    price: 1.85, 
-    value: 925, 
-    change24h: 3.21, 
-    chain: "arbitrum", 
-    chainColor: "#28A0F0",
-    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/info/logo.png" 
-  },
-  { 
-    id: "usdc-1", 
-    symbol: "USDC", 
-    name: "USD Coin", 
-    balance: 1500, 
-    price: 1.00, 
-    value: 1500, 
-    change24h: 0.01, 
-    chain: "base", 
-    chainColor: "#0052FF",
-    logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913/logo.png" 
-  },
-];
-
 type NFTHolding = {
   id: string;
   name: string;
@@ -151,57 +99,6 @@ type NFTHolding = {
   receivedDate: string;
   isListed: boolean;
 };
-
-const DEMO_NFTS: NFTHolding[] = [
-  {
-    id: "nft-1",
-    name: "Nations Pre-Reveal",
-    collection: "Nations on HL",
-    image: "https://i.seadn.io/s/raw/files/4d119e5907c13da82fc9d618991a76c7.png?auto=format&dpr=1&w=384",
-    floorPrice: 0.68,
-    topOffer: 0.04,
-    chain: "arbitrum",
-    chainColor: "#28A0F0",
-    receivedDate: "8/20/25",
-    isListed: false
-  },
-  {
-    id: "nft-2",
-    name: "Undercats #330",
-    collection: "Undercats",
-    image: "https://images.tensor.trade/tensor/dda31a29-e58f-4ed3-9a3b-285223384236",
-    floorPrice: 14.78,
-    chain: "solana",
-    chainColor: "#9945FF",
-    receivedDate: "1/17/24",
-    isListed: false,
-    rarity: "#420"
-  },
-  {
-    id: "nft-3",
-    name: "Ladynaire #147",
-    collection: "Lazynaire: The Ladynaire",
-    image: "https://i.seadn.io/s/raw/files/7027581691238495444ca7042858102d.png?auto=format&dpr=1&w=384",
-    floorPrice: 2.50,
-    listingPrice: 3.50,
-    chain: "ethereum",
-    chainColor: "#627EEA",
-    receivedDate: "8/3/23",
-    isListed: true,
-    rarity: "#61"
-  },
-  {
-    id: "nft-4",
-    name: "T(RE:)AT",
-    collection: "T(RE:)AT",
-    image: "https://images.tensor.trade/tensor/26330419-450f-488b-a2c9-f9c3f1e56950",
-    floorPrice: 0.13,
-    chain: "solana",
-    chainColor: "#9945FF",
-    receivedDate: "10/31/24",
-    isListed: false
-  }
-];
 
 /* ----------------------- Wallet Button Component ----------------------- */
 function WalletButton({
@@ -417,9 +314,6 @@ export default function PortfolioPage() {
   const { disconnect: disconnectEvm } = useDisconnect();
   const { publicKey: solanaPublicKey, disconnect: disconnectAdapter, connected: isSolanaConnected, select } = useWallet();
   const solanaAddress = solanaPublicKey?.toBase58();
-  
-  // Determine if we're showing demo or real data
-  const isDemo = !isEvmConnected && !isSolanaConnected;
 
   // Custom disconnect handler that also resets selection
   const disconnectSolana = useCallback(async () => {
@@ -654,8 +548,7 @@ export default function PortfolioPage() {
     }
     
     // Add NFT values
-    const nftSource = isDemo ? DEMO_NFTS : nfts;
-    for (const n of nftSource) {
+    for (const n of nfts) {
       if ((n.floorPrice || 0) > 0) {
         if (!distribution[n.chain]) {
           distribution[n.chain] = {
@@ -674,11 +567,11 @@ export default function PortfolioPage() {
         percentage: totalValue > 0 ? (data.value / totalValue) * 100 : 0,
       }))
       .sort((a, b) => b.value - a.value);
-  }, [holdings, totalValue, isDemo, nfts]);
+  }, [holdings, totalValue, nfts]);
 
   const filteredHoldings = useMemo(() => {
-    // Determine source data: Demo or Real
-    let result = [...(isDemo ? DEMO_HOLDINGS : holdings)];
+    // Source data from real holdings
+    let result = [...holdings];
 
     // Search filter
     if (searchQuery) {
@@ -699,11 +592,11 @@ export default function PortfolioPage() {
     result = result.filter(h => h.value > 0.01);
 
     return result;
-  }, [holdings, searchQuery, chainFilter, isDemo]);
+  }, [holdings, searchQuery, chainFilter]);
 
   // Filter NFTs
   const filteredNFTs = useMemo(() => {
-     let result = [...(isDemo ? DEMO_NFTS : nfts)];
+     let result = [...nfts];
 
      // Spam/Low Value Filter
      if (hideSpam) {
@@ -739,7 +632,7 @@ export default function PortfolioPage() {
      }
 
      return result;
-  }, [searchQuery, chainFilter, isDemo, nfts, hideSpam]);
+  }, [searchQuery, chainFilter, nfts, hideSpam]);
 
   // Dynamic chain filter list - shows only chains with holdings, or defaults when no wallet
   const availableChains = useMemo(() => {
@@ -751,7 +644,7 @@ export default function PortfolioPage() {
     }
     
     // Get unique chains from actual holdings (Tokens or NFTs)
-    const source = viewMode === "tokens" ? holdings : (isDemo ? DEMO_NFTS : nfts);
+    const source = viewMode === "tokens" ? holdings : nfts;
     // map cast to any to handle both types having 'chain'
     const chainsWithHoldings = [...new Set(source.map((h: any) => h.chain))];
     
@@ -767,7 +660,7 @@ export default function PortfolioPage() {
     });
 
     return chainsWithHoldings;
-  }, [holdings, isEvmConnected, isSolanaConnected, viewMode, nfts, isDemo]);
+  }, [holdings, isEvmConnected, isSolanaConnected, viewMode, nfts]);
 
   // Format helpers
   // Format helpers
@@ -790,15 +683,9 @@ export default function PortfolioPage() {
 
   const displayHoldings = filteredHoldings;
   const displayNFTs = filteredNFTs;
-  const displayTotalValue = isDemo 
-    ? (DEMO_HOLDINGS.reduce((sum, h) => sum + h.value, 0) + DEMO_NFTS.reduce((sum, n) => sum + (n.floorPrice || 0), 0))
-    : totalValue;
-  const displayTokenValue = isDemo 
-    ? DEMO_HOLDINGS.reduce((sum, h) => sum + h.value, 0)
-    : totalTokenValue;
-  const displayNftValue = isDemo
-    ? DEMO_NFTS.reduce((sum, n) => sum + (n.floorPrice || 0), 0)
-    : totalNftValue;
+  const displayTotalValue = totalValue;
+  const displayTokenValue = totalTokenValue;
+  const displayNftValue = totalNftValue;
 
   return (
     <div className="flex flex-col min-h-screen pb-10">
@@ -909,15 +796,7 @@ export default function PortfolioPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={isDemo 
-                          ? [
-                              { name: "ETH", value: 60, color: "#627EEA" },
-                              { name: "SOL", value: 25, color: "#9945FF" },
-                              { name: "ARB", value: 10, color: "#28A0F0" },
-                              { name: "BASE", value: 5, color: "#0052FF" },
-                            ]
-                          : chainDistribution.map(c => ({ name: c.chain.toUpperCase(), value: c.value, color: c.color }))
-                        }
+                        data={chainDistribution.map(c => ({ name: c.chain.toUpperCase(), value: c.value, color: c.color, percentage: c.percentage }))}
                         dataKey="value"
                         innerRadius={40}
                         outerRadius={60}
@@ -925,12 +804,7 @@ export default function PortfolioPage() {
                         stroke="none"
                         cornerRadius={4}
                       >
-                        {(isDemo 
-                          ? [
-                              { color: "#627EEA" }, { color: "#9945FF" }, { color: "#28A0F0" }, { color: "#0052FF" }
-                            ] 
-                          : chainDistribution
-                        ).map((entry, index) => (
+                        {chainDistribution.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                         ))}
                       </Pie>
@@ -938,9 +812,9 @@ export default function PortfolioPage() {
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             const data = payload[0].payload;
-                            // Calculate value for Demo (since data.value is percentage) or use real value
-                            const val = isDemo ? (displayTotalValue * (data.value / 100)) : data.value;
-                            const pct = isDemo ? data.value : data.percentage;
+                            // Use real values from chainDistribution
+                            const val = data.value;
+                            const pct = data.percentage;
                             
                             return (
                               <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800 p-2 rounded-lg shadow-xl min-w-[100px]">
@@ -965,22 +839,14 @@ export default function PortfolioPage() {
                   {/* Center Text */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <span className="text-xs font-bold text-zinc-500">
-                      {isDemo ? 4 : chainDistribution.length}
+                      {chainDistribution.length}
                     </span>
                   </div>
                </div>
                
                {/* Chain List - Top 4 Only (No Scroll) */}
                <div className="flex-1 pr-1 space-y-1">
-                 {(isDemo
-                    ? [
-                        { name: "Ethereum", percentage: 60, color: "#627EEA" },
-                        { name: "Solana", percentage: 25, color: "#9945FF" },
-                        { name: "Arbitrum", percentage: 10, color: "#28A0F0" },
-                        { name: "Base", percentage: 5, color: "#0052FF" },
-                      ]
-                    : chainDistribution
-                  ).slice(0, 4).map((chain: any) => (
+                 {chainDistribution.slice(0, 4).map((chain) => (
                     <div key={chain.name || chain.chain} className="flex items-center justify-between text-sm hover:bg-zinc-800/40 px-1.5 py-1 rounded transition-colors group">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: chain.color }} />
@@ -1068,7 +934,7 @@ export default function PortfolioPage() {
                       </div>
                   </div>
                ))}
-               {!isDemo && (
+               {(isEvmConnected || isSolanaConnected) && (
                    <div className="p-4 text-center text-zinc-500 text-xs mt-4">
                        Connect wallet indexer integration coming soon.
                    </div>
