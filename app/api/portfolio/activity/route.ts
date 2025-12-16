@@ -50,23 +50,26 @@ function timeAgo(timestamp: number): string {
 async function fetchSolanaActivity(address: string): Promise<Activity[]> {
   const apiKey = process.env.HELIUS_API_KEY;
   if (!apiKey) {
-    console.log('No Helius API key configured');
-    return [];
+    console.warn('Missing HELIUS_API_KEY');
+    return []; 
   }
 
   try {
     const response = await fetch(
       `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=15`,
-      { next: { revalidate: 15 } } // Cache for 15 seconds
+      { next: { revalidate: 10 } }
     );
 
     if (!response.ok) {
-      console.error('Helius API error:', response.status);
+      console.error('Helius API error:', response.status, await response.text());
       return [];
     }
 
     const transactions = await response.json();
     
+    // Normalize address for comparison
+    const searchAddr = address.toLowerCase();
+
     return transactions.map((tx: any) => {
       const type = HELIUS_TYPE_MAP[tx.type] || 'unknown';
       
@@ -81,11 +84,14 @@ async function fetchSolanaActivity(address: string): Promise<Activity[]> {
         const amount = transfer.tokenAmount || 0;
         const symbol = transfer.mint?.slice(0, 4) || 'tokens';
         
-        // Check for exact address match
-        if (transfer.fromUserAccount === address) {
+        // Check for address match (case insensitive)
+        const from = (transfer.fromUserAccount || '').toLowerCase();
+        const to = (transfer.toUserAccount || '').toLowerCase();
+
+        if (from === searchAddr) {
           refinedType = 'send';
           value = `-${amount.toFixed(2)} ${symbol}`;
-        } else if (transfer.toUserAccount === address) {
+        } else if (to === searchAddr) {
           refinedType = 'receive';
           value = `+${amount.toFixed(2)} ${symbol}`;
         }
@@ -96,10 +102,13 @@ async function fetchSolanaActivity(address: string): Promise<Activity[]> {
         const transfer = tx.nativeTransfers[0];
         const solAmount = (transfer.amount / 1e9).toFixed(4);
         
-        if (transfer.fromUserAccount === address) {
+        const from = (transfer.fromUserAccount || '').toLowerCase();
+        const to = (transfer.toUserAccount || '').toLowerCase();
+
+        if (from === searchAddr) {
           refinedType = 'send';
           value = `-${solAmount} SOL`;
-        } else if (transfer.toUserAccount === address) {
+        } else if (to === searchAddr) {
           refinedType = 'receive';
           value = `+${solAmount} SOL`;
         }
