@@ -504,6 +504,7 @@ export default function PortfolioPage() {
     }
 
     setActivitiesLoading(true);
+    console.log("Fetching activities for:", { evmAddress, solanaAddress }); // DEBUG LOG
     try {
       const params = new URLSearchParams();
       if (evmAddress) params.set("evmAddress", evmAddress);
