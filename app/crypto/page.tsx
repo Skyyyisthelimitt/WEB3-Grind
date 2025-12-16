@@ -225,9 +225,7 @@ export default function CryptoPricesPage() {
               )}
             </div>
 
-            <button className="p-2 rounded-lg bg-zinc-800/60 border border-zinc-700/50">
-              <Bell size={20} className="text-zinc-400" />
-            </button>
+
 
             <Link
               href="/crypto/portfolio"

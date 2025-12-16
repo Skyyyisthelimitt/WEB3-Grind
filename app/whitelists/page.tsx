@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search01Icon, Notification03Icon, Add01Icon, Delete01Icon, ArrowDown01Icon, Calendar01Icon, ArrowLeft01Icon, ArrowRight01Icon, Link01Icon } from "hugeicons-react";
+import { Search01Icon, Notification03Icon, Add01Icon, Delete01Icon, ArrowDown01Icon, Calendar01Icon, ArrowLeft01Icon, ArrowRight01Icon, Link01Icon, UserMultiple02Icon } from "hugeicons-react";
 import pfp from "../images/khun.jpg";
 
 type Chain = "ETH" | "SOL" | "BTC" | "APE" | "BASE" | "ABS" | "MONAD" | "HYPER";
@@ -45,6 +45,23 @@ export default function WhitelistsPage() {
   const [rows, setRows] = useState<WL[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Profile State
+  const [profile, setProfile] = useState<any>(null);
+  
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (res.ok) {
+          const json = await res.json();
+          setProfile(json.profile);
+        }
+      } catch (e) {
+        console.error("Profile fetch error", e);
+      }
+    })();
+  }, []);
 
   // Column Widths State
 
@@ -192,17 +209,19 @@ export default function WhitelistsPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="p-2 rounded-xl bg-zinc-900/70 border border-white/30 hover:bg-zinc-800 transition-colors">
-              <Notification03Icon size={18} className="text-white" />
-            </button>
-            <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors">
-              <Image 
-                src={pfp} 
-                alt="Profile" 
-                width={40} 
-                height={40} 
-                className="w-full h-full object-cover"
-              />
+
+            <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors flex items-center justify-center bg-zinc-800">
+               {profile?.avatar_url ? (
+                  <Image 
+                    src={profile.avatar_url} 
+                    alt="Profile" 
+                    width={40} 
+                    height={40} 
+                    className="w-full h-full object-cover"
+                  />
+               ) : (
+                  <UserMultiple02Icon size={20} className="text-zinc-400" />
+               )}
             </button>
           </div>
         </div>

@@ -501,20 +501,22 @@ useEffect(() => {
             >
               Add Collab
             </Link>
-            <button className="p-2 rounded-xl bg-zinc-900/70 border border-white/30 hover:bg-zinc-800 transition-colors">
-              <Notification03Icon size={18} className="text-white" />
-            </button>
+
             <button 
               onClick={() => setIsEditProfileOpen(true)}
-              className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors"
+              className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors flex items-center justify-center bg-zinc-800"
             >
-              <Image 
-                src={profile?.avatar || pfp} 
-                alt="Profile" 
-                width={40} 
-                height={40} 
-                className="w-full h-full object-cover"
-              />
+              {profile?.avatar || profile?.avatar_url ? (
+                <Image 
+                  src={profile?.avatar || profile?.avatar_url} 
+                  alt="Profile" 
+                  width={40} 
+                  height={40} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserMultiple02Icon size={20} className="text-zinc-400" />
+              )}
             </button>
           </div>
         </div>
