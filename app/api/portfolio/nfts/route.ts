@@ -27,7 +27,7 @@ type AlchemyNFTResponse = {
   }[];
 };
 
-type HeliusAssetResponse = {
+type _HeliusAssetResponse = {
   items: {
     id: string;
     content: {
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
            };
 
            // Parse image - prioritize CDN and Links
-           let rawImage = item.content?.links?.image || item.content?.files?.[0]?.cdn_uri || item.content?.files?.[0]?.uri || "";
+           const rawImage = item.content?.links?.image || item.content?.files?.[0]?.cdn_uri || item.content?.files?.[0]?.uri || "";
            const image = sanitizeUrl(rawImage);
            
            // Parse collection

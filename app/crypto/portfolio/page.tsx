@@ -14,7 +14,6 @@ import {
   Check,
   LogOut,
   ChevronDown,
-  Link2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -431,7 +430,7 @@ export default function PortfolioPage() {
   // Portfolio state
   const [holdings, setHoldings] = useState<TokenHolding[]>([]);
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [_refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // UI state
@@ -599,7 +598,7 @@ export default function PortfolioPage() {
   }, [isEvmConnected, isSolanaConnected, evmAddress, solanaAddress, fetchBalances]);
 
   // Refresh handler
-  const handleRefresh = () => {
+  const _handleRefresh = () => {
     setRefreshing(true);
     fetchBalances();
   };
@@ -675,7 +674,7 @@ export default function PortfolioPage() {
         percentage: totalValue > 0 ? (data.value / totalValue) * 100 : 0,
       }))
       .sort((a, b) => b.value - a.value);
-  }, [holdings, totalValue]);
+  }, [holdings, totalValue, isDemo, nfts]);
 
   const filteredHoldings = useMemo(() => {
     // Determine source data: Demo or Real
@@ -768,7 +767,7 @@ export default function PortfolioPage() {
     });
 
     return chainsWithHoldings;
-  }, [holdings, isEvmConnected, isSolanaConnected, viewMode, nfts]);
+  }, [holdings, isEvmConnected, isSolanaConnected, viewMode, nfts, isDemo]);
 
   // Format helpers
   // Format helpers
