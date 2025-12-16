@@ -9,6 +9,7 @@ import login1 from "../images/login1.png";
 import login2 from "../images/login2.png";
 import login3 from "../images/login3.png";
 import login4 from "../images/login4.png";
+import login5 from "../images/login5.png";
 import logo from "../images/loginlogo.png";
 
 import DotGrid from "../components/DotGrid/DotGrid";
@@ -16,23 +17,28 @@ import DotGrid from "../components/DotGrid/DotGrid";
 const slides = [
   {
     image: login1,
-    title: "Manage your WEB3 Journey",
-    description: "Track your whitelists and collaborations all in one place",
+    title: "Manage Your Web3 Journey",
+    description: "Your all-in-one command center for finding, tracking, and managing opportunities.",
   },
   {
     image: login2,
-    title: "Effortlessly Track All Your Whitelist Spots",
-    description: "Stay organized with real-time updates, quick search, and mint dates.",
+    title: "Track the Pulse of the Market",
+    description: "Monitor your favorite tokens with real-time price updates and trend analysis.",
   },
   {
     image: login3,
-    title: "Stay On Top of Every Collaboration",
-    description: "Clear deadlines. Clean tracking. Zero confusion.",
+    title: "Streamlined Collab Management",
+    description: "Keep your whitelists and collaborations organized. Never lose track of a spot again.",
   },
   {
     image: login4,
-    title: "Inspire Your Journey",
-    description: "Display Bible verses and quotes that guide your daily grind.",
+    title: "Deep Portfolio Insights",
+    description: "Analyze your holdings, asset distribution, and on-chain activity across multiple chains.",
+  },
+  {
+    image: login5,
+    title: "Stay Ahead of the Game",
+    description: "Instant alerts for upcoming mints and deadlines that require your attention.",
   },
 ];
 
