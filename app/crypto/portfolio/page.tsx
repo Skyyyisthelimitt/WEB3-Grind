@@ -736,10 +736,10 @@ export default function PortfolioPage() {
                   </div>
                </div>
                
-               {/* Stylish Wallet Icon - Bigger */}
-               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/10">
-                  <Wallet className="text-indigo-400" size={28} />
-               </div>
+                {/* Stylish Wallet Icon */}
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/10">
+                   <Wallet className="text-indigo-400" size={22} />
+                </div>
              </div>
 
              {/* 24h Change Badge - Bigger Text & Moved Up */}
@@ -791,71 +791,80 @@ export default function PortfolioPage() {
             <h3 className="text-zinc-300 font-semibold mb-3 text-sm">Chain & Asset Distrib.</h3>
             
             <div className="flex items-center gap-6 flex-1 mb-2 pl-4">
-               {/* Pie Chart - Bigger & Moved Right */}
-               <div className="relative w-32 h-32 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={chainDistribution.map(c => ({ name: c.chain.toUpperCase(), value: c.value, color: c.color, percentage: c.percentage }))}
-                        dataKey="value"
-                        innerRadius={40}
-                        outerRadius={60}
-                        paddingAngle={4}
-                        stroke="none"
-                        cornerRadius={4}
-                      >
-                        {chainDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                        ))}
-                      </Pie>
-                       <Tooltip 
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            // Use real values from chainDistribution
-                            const val = data.value;
-                            const pct = data.percentage;
-                            
-                            return (
-                              <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800 p-2 rounded-lg shadow-xl min-w-[100px]">
-                                 <div className="flex items-center gap-1.5 mb-1.5">
-                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: data.color }} />
-                                    <span className="text-xs font-semibold text-zinc-300">{data.name}</span>
-                                 </div>
-                                 <div className="text-sm font-bold text-white leading-none mb-0.5">
-                                   {formatValue(val)}
-                                 </div>
-                                 <div className="text-[10px] text-zinc-500 font-mono">
-                                   {(pct || 0).toFixed(1)}%
-                                 </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Center Text */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="text-xs font-bold text-zinc-500">
-                      {chainDistribution.length}
-                    </span>
-                  </div>
-               </div>
-               
-               {/* Chain List - Top 4 Only (No Scroll) */}
-               <div className="flex-1 pr-1 space-y-1">
-                 {chainDistribution.slice(0, 4).map((chain) => (
-                    <div key={chain.name || chain.chain} className="flex items-center justify-between text-sm hover:bg-zinc-800/40 px-1.5 py-1 rounded transition-colors group">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: chain.color }} />
-                        <span className="text-zinc-300 truncate group-hover:text-zinc-100 font-medium">{chain.name}</span>
+               {chainDistribution.length > 0 ? (
+                 <>
+                   {/* Pie Chart */}
+                   <div className="relative w-32 h-32 shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={chainDistribution.map(c => ({ name: c.chain.toUpperCase(), value: c.value, color: c.color, percentage: c.percentage }))}
+                            dataKey="value"
+                            innerRadius={40}
+                            outerRadius={60}
+                            paddingAngle={4}
+                            stroke="none"
+                            cornerRadius={4}
+                          >
+                            {chainDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                            ))}
+                          </Pie>
+                           <Tooltip 
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                const val = data.value;
+                                const pct = data.percentage;
+                                
+                                return (
+                                  <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800 p-2 rounded-lg shadow-xl min-w-[100px]">
+                                     <div className="flex items-center gap-1.5 mb-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: data.color }} />
+                                        <span className="text-xs font-semibold text-zinc-300">{data.name}</span>
+                                     </div>
+                                     <div className="text-sm font-bold text-white leading-none mb-0.5">
+                                       {formatValue(val)}
+                                     </div>
+                                     <div className="text-[10px] text-zinc-500 font-mono">
+                                       {(pct || 0).toFixed(1)}%
+                                     </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      {/* Center Text */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span className="text-xs font-bold text-zinc-500">
+                          {chainDistribution.length}
+                        </span>
                       </div>
-                      <span className="text-zinc-500 font-mono text-xs shrink-0">{(chain.percentage || 0).toFixed(0)}%</span>
-                    </div>
-                  ))}
-               </div>
+                   </div>
+                   
+                   {/* Chain List - Top 4 Only */}
+                   <div className="flex-1 pr-1 space-y-1">
+                     {chainDistribution.slice(0, 4).map((chain) => (
+                        <div key={chain.name || chain.chain} className="flex items-center justify-between text-sm hover:bg-zinc-800/40 px-1.5 py-1 rounded transition-colors group">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: chain.color }} />
+                            <span className="text-zinc-300 truncate group-hover:text-zinc-100 font-medium">{chain.name}</span>
+                          </div>
+                          <span className="text-zinc-500 font-mono text-xs shrink-0">{(chain.percentage || 0).toFixed(0)}%</span>
+                        </div>
+                      ))}
+                   </div>
+                 </>
+               ) : (
+                 <div className="flex-1 flex items-center justify-center">
+                   <div className="text-zinc-500 text-sm text-center">
+                     {(isEvmConnected || isSolanaConnected) ? "Loading..." : "Connect wallet to view distribution"}
+                   </div>
+                 </div>
+               )}
             </div>
 
             {/* Asset Breakdown (Bottom) - Bigger Text */}
@@ -891,52 +900,14 @@ export default function PortfolioPage() {
             </div>
             
             <div className="flex-1 overflow-y-auto pr-1 space-y-1">
-               {[
-                 { type: "mint", title: "Minted Azuki #42", time: "2h ago", value: "-0.5 ETH", chain: "ethereum", tx: "0x123...abc" },
-                 { type: "swap", title: "Swapped USDC for SOL", time: "5h ago", value: "+15 SOL", chain: "solana", tx: "5h7...9kL" },
-                 { type: "list", title: "Listed Bored Ape", time: "1d ago", value: "88 ETH", chain: "ethereum", tx: "0x456...def" },
-                 { type: "send", title: "Sent 100 USDC", time: "2d ago", value: "-100 USDC", chain: "base", tx: "0x789...ghi" },
-               ].map((activity, idx) => (
-                  <div key={idx} className="group flex items-center justify-between p-2 rounded-lg hover:bg-zinc-800/40 transition-colors">
-                      <div className="flex items-center gap-3">
-                         <div className={`w-9 h-9 rounded-full flex items-center justify-center border border-white/5 shrink-0 ${
-                             activity.type === "mint" ? "bg-purple-500/10 text-purple-400" :
-                             activity.type === "swap" ? "bg-blue-500/10 text-blue-400" :
-                             activity.type === "list" ? "bg-amber-500/10 text-amber-400" :
-                             "bg-zinc-500/10 text-zinc-400"
-                         }`}>
-                             {/* Icons based on type */}
-                             {activity.type === "mint" ? "⚡" : activity.type === "swap" ? "🔄" : activity.type === "list" ? "🏷️" : "📤"}
-                         </div>
-                         <div className="min-w-0">
-                            <div className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate">{activity.title}</div>
-                            <div className="text-xs text-zinc-500">{activity.time}</div>
-                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 pl-2 shrink-0">
-                          <div className={`text-sm font-medium ${
-                              activity.value.startsWith("+") ? "text-emerald-400" : "text-zinc-400"
-                          }`}>
-                              {activity.value}
-                          </div>
-                          
-                          {/* Link on Right */}
-                          <a 
-                             href={activity.chain === "solana" ? `https://solscan.io/tx/${activity.tx}` : `https://etherscan.io/tx/${activity.tx}`} 
-                             target="_blank" 
-                             rel="noopener noreferrer"
-                             className="text-zinc-600 hover:text-indigo-400 transition-colors p-1 rounded-md hover:bg-zinc-700/50"
-                             title="View Transaction"
-                         >
-                             <ExternalLink size={14} />
-                         </a>
-                      </div>
-                  </div>
-               ))}
-               {(isEvmConnected || isSolanaConnected) && (
-                   <div className="p-4 text-center text-zinc-500 text-xs mt-4">
-                       Connect wallet indexer integration coming soon.
+               {(isEvmConnected || isSolanaConnected) ? (
+                   <div className="flex flex-col items-center justify-center h-full text-center">
+                       <div className="text-zinc-500 text-sm">No recent activity</div>
+                       <div className="text-zinc-600 text-xs mt-1">Activity indexer coming soon</div>
+                   </div>
+               ) : (
+                   <div className="flex flex-col items-center justify-center h-full text-center">
+                       <div className="text-zinc-500 text-sm">Connect wallet to view activity</div>
                    </div>
                )}
             </div>
