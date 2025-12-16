@@ -17,6 +17,7 @@ import {
   CheckmarkCircle01Icon,
   UserMultiple02Icon
 } from "hugeicons-react";
+import EditProfileModal from "../../components/EditProfileModal";
 import pfp from "../images/khun.jpg";
 
 const DEFAULT_COMMUNITIES = [
@@ -66,19 +67,22 @@ export default function CollabsPage() {
   
   // Profile State
   const [profile, setProfile] = useState<any>(null);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("/api/profile");
+      if (res.ok) {
+        const json = await res.json();
+        setProfile(json.profile);
+      }
+    } catch (e) {
+      console.error("Profile fetch error", e);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/profile");
-        if (res.ok) {
-          const json = await res.json();
-          setProfile(json.profile);
-        }
-      } catch (e) {
-        console.error("Profile fetch error", e);
-      }
-    })();
+    fetchProfile();
   }, []);
 
   // Community State
@@ -211,7 +215,10 @@ export default function CollabsPage() {
           </div>
           <div className="flex items-center gap-3">
 
-             <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors flex items-center justify-center bg-zinc-800">
+             <button 
+               onClick={() => setIsEditProfileOpen(true)}
+               className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors flex items-center justify-center bg-zinc-800"
+             >
                {profile?.avatar_url ? (
                   <Image src={profile.avatar_url} alt="Profile" width={40} height={40} className="w-full h-full object-cover"/>
                ) : (
@@ -404,6 +411,12 @@ export default function CollabsPage() {
            </table>
         </div>
       </div>
+      <EditProfileModal 
+        isOpen={isEditProfileOpen} 
+        onClose={() => setIsEditProfileOpen(false)} 
+        profile={profile}
+        onProfileUpdate={fetchProfile}
+      />
     </div>
   );
 }

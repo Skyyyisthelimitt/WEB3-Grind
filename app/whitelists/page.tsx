@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search01Icon, Notification03Icon, Add01Icon, Delete01Icon, ArrowDown01Icon, Calendar01Icon, ArrowLeft01Icon, ArrowRight01Icon, Link01Icon, UserMultiple02Icon } from "hugeicons-react";
+import EditProfileModal from "../../components/EditProfileModal";
 import pfp from "../images/khun.jpg";
 
 type Chain = "ETH" | "SOL" | "BTC" | "APE" | "BASE" | "ABS" | "MONAD" | "HYPER";
@@ -45,22 +46,25 @@ export default function WhitelistsPage() {
   const [rows, setRows] = useState<WL[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   // Profile State
   const [profile, setProfile] = useState<any>(null);
   
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/profile");
-        if (res.ok) {
-          const json = await res.json();
-          setProfile(json.profile);
-        }
-      } catch (e) {
-        console.error("Profile fetch error", e);
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("/api/profile");
+      if (res.ok) {
+        const json = await res.json();
+        setProfile(json.profile);
       }
-    })();
+    } catch (e) {
+      console.error("Profile fetch error", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
   }, []);
 
   // Column Widths State
@@ -210,7 +214,10 @@ export default function WhitelistsPage() {
           </div>
           <div className="flex items-center gap-3">
 
-            <button className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors flex items-center justify-center bg-zinc-800">
+            <button 
+              onClick={() => setIsEditProfileOpen(true)}
+              className="w-10 h-10 rounded-full overflow-hidden border-2 border-zinc-700 hover:border-zinc-500 transition-colors flex items-center justify-center bg-zinc-800"
+            >
                {profile?.avatar_url ? (
                   <Image 
                     src={profile.avatar_url} 
@@ -367,6 +374,12 @@ export default function WhitelistsPage() {
         </table>
       </div>
       </div>
+      <EditProfileModal 
+        isOpen={isEditProfileOpen} 
+        onClose={() => setIsEditProfileOpen(false)} 
+        profile={profile}
+        onProfileUpdate={fetchProfile}
+      />
     </div>
   );
 }
