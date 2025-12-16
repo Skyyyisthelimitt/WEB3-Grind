@@ -9,6 +9,8 @@ import {
   Copy,
   RefreshCw,
   Search,
+  Eye,
+  EyeOff,
   Check,
   LogOut,
   ChevronDown,
@@ -80,6 +82,8 @@ const CHAIN_COLORS: Record<string, string> = {
   base: "#0052FF",
   arbitrum: "#28A0F0",
   solana: "#9945FF",
+  polygon: "#8247E5",
+  optimism: "#FF0420",
 };
 
 /* ----------------------- Demo Data for Initial State ----------------------- */
@@ -440,6 +444,18 @@ export default function PortfolioPage() {
   
   // View Mode: Tokens or NFTs
   const [viewMode, setViewMode] = useState<"tokens" | "nfts">("tokens");
+  const [nfts, setNfts] = useState<NFTHolding[]>([]);
+  const [hideSpam, setHideSpam] = useState(true);
+
+  // Custom disconnect handler for EVM
+  const handleDisconnectEvm = useCallback(() => {
+    disconnectEvm();
+    // Clear persistence explicitly
+    localStorage.removeItem("portfolio_connections");
+    // Reset state immediately to avoid stale data
+    setHoldings([]);
+    setNfts([]);
+  }, [disconnectEvm]);
 
   // LocalStorage persistence
   useEffect(() => {
@@ -448,24 +464,42 @@ export default function PortfolioPage() {
         evm: evmAddress || null,
         solana: solanaAddress || null,
       }));
+    } else {
+      localStorage.removeItem("portfolio_connections");
     }
   }, [isEvmConnected, isSolanaConnected, evmAddress, solanaAddress]);
+
+  // Fetch balances from API
 
   // Fetch balances from API
   const fetchBalances = useCallback(async () => {
     if (!evmAddress && !solanaAddress) {
       setHoldings([]);
+      setNfts([]);
       return;
     }
 
     setLoading(true);
     try {
+      console.log("Fetching balances for:", { evmAddress, solanaAddress });
       const params = new URLSearchParams();
       if (evmAddress) params.set("evmAddress", evmAddress);
       if (solanaAddress) params.set("solanaAddress", solanaAddress);
 
       const balancesRes = await fetch(`/api/portfolio/balances?${params.toString()}`);
+      
+      // Fetch NFTs in parallel
+      const nftsRes = fetch(`/api/portfolio/nfts?${params.toString()}`).then(r => r.json()).catch(err => {
+        console.error("NFT Fetch Error:", err);
+        return { nfts: [] };
+      });
+      
       const balancesData = await balancesRes.json();
+      const nftsData = await nftsRes;
+
+      if (nftsData.nfts) {
+        setNfts(nftsData.nfts);
+      }
 
       if (!balancesData.balances) {
         setLoading(false);
@@ -479,9 +513,15 @@ export default function PortfolioPage() {
       for (const chainData of chainBalances) {
         allSymbols.push(chainData.native.symbol);
         for (const token of chainData.tokens) {
-          if (token.symbol) allSymbols.push(token.symbol);
+          const bal = parseFloat(token.tokenBalance || "0");
+          // Only fetch prices for non-dust balances
+          if (token.symbol && bal > 0.0001) {
+            allSymbols.push(token.symbol);
+          }
         }
       }
+
+      console.log(`Fetching prices for ${allSymbols.length} assets...`);
 
       // Fetch prices
       const pricesRes = await fetch(`/api/portfolio/prices?symbols=${allSymbols.join(",")}`);
@@ -548,14 +588,15 @@ export default function PortfolioPage() {
     }
   }, [evmAddress, solanaAddress]);
 
-  // Auto-fetch when wallets connect
+  // Auto-fetch when wallets connect or address changes
   useEffect(() => {
-    if (isEvmConnected || isSolanaConnected) {
+    if ((isEvmConnected && evmAddress) || (isSolanaConnected && solanaAddress)) {
       fetchBalances();
-    } else {
+    } else if (!isEvmConnected && !isSolanaConnected) {
       setHoldings([]);
+      setNfts([]);
     }
-  }, [isEvmConnected, isSolanaConnected, fetchBalances]);
+  }, [isEvmConnected, isSolanaConnected, evmAddress, solanaAddress, fetchBalances]);
 
   // Refresh handler
   const handleRefresh = () => {
@@ -581,10 +622,9 @@ export default function PortfolioPage() {
   };
 
   // Calculate totals
-  const totalValue = useMemo(() =>
-    holdings.reduce((sum, h) => sum + h.value, 0),
-    [holdings]
-  );
+  const totalTokenValue = useMemo(() => holdings.reduce((sum, h) => sum + h.value, 0), [holdings]);
+  const totalNftValue = useMemo(() => nfts.reduce((sum, n) => sum + (n.floorPrice || 0), 0), [nfts]);
+  const totalValue = totalTokenValue + totalNftValue;
 
   const totalChange24h = useMemo(() => {
     if (holdings.length === 0 || totalValue === 0) return 0;
@@ -612,6 +652,21 @@ export default function PortfolioPage() {
         };
       }
       distribution[h.chain].value += h.value;
+    }
+    
+    // Add NFT values
+    const nftSource = isDemo ? DEMO_NFTS : nfts;
+    for (const n of nftSource) {
+      if ((n.floorPrice || 0) > 0) {
+        if (!distribution[n.chain]) {
+          distribution[n.chain] = {
+            value: 0,
+            color: n.chainColor,
+            name: n.chain.charAt(0).toUpperCase() + n.chain.slice(1),
+          };
+        }
+        distribution[n.chain].value += (n.floorPrice || 0);
+      }
     }
     return Object.entries(distribution)
       .map(([chain, data]) => ({
@@ -649,7 +704,26 @@ export default function PortfolioPage() {
 
   // Filter NFTs
   const filteredNFTs = useMemo(() => {
-     let result = [...DEMO_NFTS]; // Currently only Demo Data available for NFTs
+     let result = [...(isDemo ? DEMO_NFTS : nfts)];
+
+     // Spam/Low Value Filter
+     if (hideSpam) {
+       const spamKeywords = ["voucher", "reward", "risk", "visit", "claim", "airdrop", "$1000", "$5000", "free mint", "usdc", "usdt", "retrodrop", ".com", ".io", ".xyz", "official", "winner", "mfi", "pics"];
+       result = result.filter(n => {
+         const name = n.name.toLowerCase();
+         // Keyword Check
+         if (spamKeywords.some(k => name.includes(k))) return false;
+         
+         // Value Check (EVM only for now, as Helius doesn't provide floor price yet)
+         // Filter out absolutely 0 value items if they aren't explicit whitelist (we don't have whitelist yet)
+         // But keep new mints? Risk of hiding good stuff.
+         // Given "trash" feedback, hiding 0 floor price is desired.
+         if (["ethereum","base","arbitrum","polygon","optimism"].includes(n.chain)) {
+            if ((n.floorPrice || 0) <= 0.000001) return false;
+         }
+         return true;
+       });
+     }
 
      // Search
      if (searchQuery) {
@@ -666,7 +740,7 @@ export default function PortfolioPage() {
      }
 
      return result;
-  }, [searchQuery, chainFilter]);
+  }, [searchQuery, chainFilter, isDemo, nfts, hideSpam]);
 
   // Dynamic chain filter list - shows only chains with holdings, or defaults when no wallet
   const availableChains = useMemo(() => {
@@ -678,31 +752,54 @@ export default function PortfolioPage() {
     }
     
     // Get unique chains from actual holdings (Tokens or NFTs)
-    const source = viewMode === "tokens" ? holdings : DEMO_NFTS; // Using Demo for NFTs for now
+    const source = viewMode === "tokens" ? holdings : (isDemo ? DEMO_NFTS : nfts);
     // map cast to any to handle both types having 'chain'
     const chainsWithHoldings = [...new Set(source.map((h: any) => h.chain))];
+    
+    // Sort by Priority
+    const CHAIN_PRIORITY = ["ethereum", "base", "arbitrum", "polygon", "optimism", "solana"];
+    chainsWithHoldings.sort((a, b) => {
+      const idxA = CHAIN_PRIORITY.indexOf(a);
+      const idxB = CHAIN_PRIORITY.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+
     return chainsWithHoldings;
-  }, [holdings, isEvmConnected, isSolanaConnected, viewMode]);
+  }, [holdings, isEvmConnected, isSolanaConnected, viewMode, nfts]);
 
   // Format helpers
-  const formatValue = (value: number) => {
+  // Format helpers
+  const formatValue = (value: number | undefined | null) => {
+    const safeValue = value || 0;
     const config = CURRENCY_CONFIG[currency];
-    return `${config.symbol}${value.toLocaleString(config.locale, {
+    return `${config.symbol}${safeValue.toLocaleString(config.locale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
   };
 
-  const formatBalance = (balance: number, symbol: string) => {
-    if (balance >= 1000000) return `${(balance / 1000000).toFixed(2)}M ${symbol}`;
-    if (balance >= 1000) return `${(balance / 1000).toFixed(2)}K ${symbol}`;
-    if (balance >= 1) return `${balance.toFixed(4)} ${symbol}`;
-    return `${balance.toFixed(8)} ${symbol}`;
+  const formatBalance = (balance: number | undefined | null, symbol: string) => {
+    const safeBalance = balance || 0;
+    if (safeBalance >= 1000000) return `${(safeBalance / 1000000).toFixed(2)}M ${symbol}`;
+    if (safeBalance >= 1000) return `${(safeBalance / 1000).toFixed(2)}K ${symbol}`;
+    if (safeBalance >= 1) return `${safeBalance.toFixed(4)} ${symbol}`;
+    return `${safeBalance.toFixed(8)} ${symbol}`;
   };
 
   const displayHoldings = filteredHoldings;
   const displayNFTs = filteredNFTs;
-  const displayTotalValue = isDemo ? DEMO_HOLDINGS.reduce((sum, h) => sum + h.value, 0) : totalValue;
+  const displayTotalValue = isDemo 
+    ? (DEMO_HOLDINGS.reduce((sum, h) => sum + h.value, 0) + DEMO_NFTS.reduce((sum, n) => sum + (n.floorPrice || 0), 0))
+    : totalValue;
+  const displayTokenValue = isDemo 
+    ? DEMO_HOLDINGS.reduce((sum, h) => sum + h.value, 0)
+    : totalTokenValue;
+  const displayNftValue = isDemo
+    ? DEMO_NFTS.reduce((sum, n) => sum + (n.floorPrice || 0), 0)
+    : totalNftValue;
 
   return (
     <div className="flex flex-col min-h-screen pb-10">
@@ -718,7 +815,7 @@ export default function PortfolioPage() {
               type="evm"
               address={evmAddress}
               isConnected={isEvmConnected}
-              onDisconnect={() => disconnectEvm()}
+              onDisconnect={handleDisconnectEvm}
               onCopy={handleCopyEvm}
               copied={copiedEvm}
             />
@@ -794,7 +891,7 @@ export default function PortfolioPage() {
                         </div>
                       </div>
                       <div className="text-emerald-400 text-sm font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        +{bestAsset.change24h.toFixed(2)}%
+                        +{(bestAsset.change24h || 0).toFixed(2)}%
                       </div>
                    </div>
                  ) : (
@@ -838,7 +935,7 @@ export default function PortfolioPage() {
                           <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                         ))}
                       </Pie>
-                      <Tooltip 
+                       <Tooltip 
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             const data = payload[0].payload;
@@ -856,7 +953,7 @@ export default function PortfolioPage() {
                                    {formatValue(val)}
                                  </div>
                                  <div className="text-[10px] text-zinc-500 font-mono">
-                                   {pct.toFixed(1)}%
+                                   {(pct || 0).toFixed(1)}%
                                  </div>
                               </div>
                             );
@@ -890,7 +987,7 @@ export default function PortfolioPage() {
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: chain.color }} />
                         <span className="text-zinc-300 truncate group-hover:text-zinc-100 font-medium">{chain.name}</span>
                       </div>
-                      <span className="text-zinc-500 font-mono text-xs shrink-0">{chain.percentage.toFixed(0)}%</span>
+                      <span className="text-zinc-500 font-mono text-xs shrink-0">{(chain.percentage || 0).toFixed(0)}%</span>
                     </div>
                   ))}
                </div>
@@ -901,7 +998,7 @@ export default function PortfolioPage() {
                  <div className="flex-1 space-y-2">
                     <div className="flex justify-between items-end">
                       <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Tokens</span>
-                      <span className="text-sm font-bold text-zinc-100">{formatValue(displayTotalValue)}</span>
+                      <span className="text-sm font-bold text-zinc-100">{formatValue(displayTokenValue)}</span>
                     </div>
                     {/* Progress Bar for Tokens */}
                     <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
@@ -912,10 +1009,10 @@ export default function PortfolioPage() {
                  <div className="flex-1 space-y-2 opacity-60">
                     <div className="flex justify-between items-end">
                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">NFTs</span>
-                       <span className="text-sm font-bold text-zinc-500">$0</span>
+                       <span className="text-sm font-bold text-zinc-100">{formatValue(displayNftValue)}</span>
                     </div>
                      <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                       <div className="h-full bg-pink-500 w-0" />
+                       <div className="h-full bg-pink-500 transition-all duration-1000" style={{ width: `${displayTotalValue > 0 ? (displayNftValue / displayTotalValue) * 100 : 0}%` }} />
                      </div>
                  </div>
             </div>
@@ -984,15 +1081,33 @@ export default function PortfolioPage() {
       {/* Search and Filter Controls */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         {/* Search */}
-        <div className="relative flex-1 max-w-md">
+        {/* Search */}
+        <div className="relative flex-1 max-w-md flex items-center gap-2">
+          <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tokens..."
+            placeholder={viewMode === "tokens" ? "Search tokens..." : "Search NFTs..."}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700/80 transition-all"
           />
+          </div>
+
+          {/* Hide Trash Toggle */}
+          {viewMode === "nfts" && (
+            <button
+               onClick={() => setHideSpam(!hideSpam)}
+               className={`h-10 px-3 rounded-xl border text-xs font-medium transition-all flex items-center gap-1.5 ${
+                 hideSpam 
+                   ? "bg-rose-500/10 border-rose-500/30 text-rose-400" 
+                   : "bg-zinc-800/60 border-zinc-800 text-zinc-400 hover:text-zinc-300"
+               }`}
+            >
+              {hideSpam ? <EyeOff size={14} /> : <Eye size={14} />}
+              {hideSpam ? "No Trash" : "All"}
+            </button>
+          )}
         </div>
 
         {/* Chain Filter */}
