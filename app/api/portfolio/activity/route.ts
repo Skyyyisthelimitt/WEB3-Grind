@@ -154,148 +154,142 @@ async function fetchEvmActivity(address: string): Promise<Activity[]> {
 
   const activities: Activity[] = [];
 
-  // Fetch from Ethereum mainnet only for now (to avoid rate limits)
-  const chain = EVM_CHAINS[0]; // Ethereum
-
-  try {
-    const response = await fetch(
-      `https://${chain.subdomain}.g.alchemy.com/v2/${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'alchemy_getAssetTransfers',
-          params: [{
-            fromBlock: '0x0',
-            toBlock: 'latest',
-            fromAddress: address,
-            category: ['external', 'erc20', 'erc721', 'erc1155'],
-            order: 'desc',
-            maxCount: '0xA', // 10 transactions
-            withMetadata: true,
-          }],
-        }),
-        next: { revalidate: 60 },
-      }
-    );
-
-    if (!response.ok) {
-      console.error(`Alchemy API error for ${chain.key}:`, response.status);
-      return activities;
-    }
-
-    const data = await response.json();
-    const transfers = data.result?.transfers || [];
-
-    for (const tx of transfers) {
-      let type: ActivityType = 'send';
-      let title = 'Sent';
-      let value = '';
-
-      // Determine type and value
-      if (tx.from === '0x0000000000000000000000000000000000000000') {
-        type = 'mint';
-        title = 'Minted';
-      }
-
-      // Format value
-      if (tx.value) {
-        const symbol = tx.asset || 'ETH';
-        value = `-${parseFloat(tx.value).toFixed(4)} ${symbol}`;
-      }
-
-      // Add asset info to title
-      if (tx.asset) {
-        title = `${title} ${tx.asset}`;
-      }
-
-      // Parse timestamp from metadata
-      const timestamp = tx.metadata?.blockTimestamp 
-        ? new Date(tx.metadata.blockTimestamp).getTime()
-        : Date.now();
-
-      activities.push({
-        id: `${tx.hash}-${tx.uniqueId}`,
-        type,
-        title: title.length > 30 ? title.substring(0, 30) + '...' : title,
-        timestamp,
-        value,
-        chain: chain.key,
-        txHash: tx.hash,
-        explorerUrl: `${chain.explorer}${tx.hash}`,
-      });
-    }
-
-    // Also fetch incoming transfers
-    const incomingResponse = await fetch(
-      `https://${chain.subdomain}.g.alchemy.com/v2/${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 2,
-          method: 'alchemy_getAssetTransfers',
-          params: [{
-            fromBlock: '0x0',
-            toBlock: 'latest',
-            toAddress: address,
-            category: ['external', 'erc20', 'erc721', 'erc1155'],
-            order: 'desc',
-            maxCount: '0xA',
-            withMetadata: true,
-          }],
-        }),
-        next: { revalidate: 60 },
-      }
-    );
-
-    if (incomingResponse.ok) {
-      const incomingData = await incomingResponse.json();
-      const incomingTransfers = incomingData.result?.transfers || [];
-
-      for (const tx of incomingTransfers) {
-        let type: ActivityType = 'receive';
-        let title = 'Received';
-        let value = '';
-
-        // Check for mint
-        if (tx.from === '0x0000000000000000000000000000000000000000') {
-          type = 'mint';
-          title = 'Minted';
+  // Fetch from all EVM chains in parallel
+  const promises = EVM_CHAINS.map(async (chain) => {
+    try {
+      // Fetch outgoing transfers
+      const outgoingRes = await fetch(
+        `https://${chain.subdomain}.g.alchemy.com/v2/${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'alchemy_getAssetTransfers',
+            params: [{
+              fromBlock: '0x0',
+              toBlock: 'latest',
+              fromAddress: address,
+              category: ['external', 'erc20', 'erc721', 'erc1155'],
+              order: 'desc',
+              maxCount: '0x5', // 5 transactions per chain to keep it fast
+              withMetadata: true,
+            }],
+          }),
+          next: { revalidate: 30 },
         }
+      );
 
-        // Format value
-        if (tx.value) {
-          const symbol = tx.asset || 'ETH';
-          value = `+${parseFloat(tx.value).toFixed(4)} ${symbol}`;
+      if (outgoingRes.ok) {
+        const data = await outgoingRes.json();
+        const transfers = data.result?.transfers || [];
+        
+        for (const tx of transfers) {
+          let type: ActivityType = 'send';
+          let title = 'Sent';
+          let value = '';
+
+          if (tx.from === '0x0000000000000000000000000000000000000000') {
+            type = 'mint';
+            title = 'Minted';
+          }
+
+          if (tx.value) {
+            const symbol = tx.asset || 'ETH';
+            value = `-${parseFloat(tx.value).toFixed(4)} ${symbol}`;
+          }
+
+          if (tx.asset) {
+            title = `${title} ${tx.asset}`;
+          }
+
+          const timestamp = tx.metadata?.blockTimestamp 
+            ? new Date(tx.metadata.blockTimestamp).getTime()
+            : Date.now();
+
+          activities.push({
+            id: `${tx.hash}-${tx.uniqueId}`,
+            type,
+            title: title.length > 30 ? title.substring(0, 30) + '...' : title,
+            timestamp,
+            value,
+            chain: chain.key,
+            txHash: tx.hash,
+            explorerUrl: `${chain.explorer}${tx.hash}`,
+          });
         }
-
-        if (tx.asset) {
-          title = `${title} ${tx.asset}`;
-        }
-
-        const timestamp = tx.metadata?.blockTimestamp 
-          ? new Date(tx.metadata.blockTimestamp).getTime()
-          : Date.now();
-
-        activities.push({
-          id: `${tx.hash}-${tx.uniqueId}-in`,
-          type,
-          title: title.length > 30 ? title.substring(0, 30) + '...' : title,
-          timestamp,
-          value,
-          chain: chain.key,
-          txHash: tx.hash,
-          explorerUrl: `${chain.explorer}${tx.hash}`,
-        });
       }
+
+      // Fetch incoming transfers
+      const incomingRes = await fetch(
+        `https://${chain.subdomain}.g.alchemy.com/v2/${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'alchemy_getAssetTransfers',
+            params: [{
+              fromBlock: '0x0',
+              toBlock: 'latest',
+              toAddress: address,
+              category: ['external', 'erc20', 'erc721', 'erc1155'],
+              order: 'desc',
+              maxCount: '0x5',
+              withMetadata: true,
+            }],
+          }),
+          next: { revalidate: 30 },
+        }
+      );
+
+      if (incomingRes.ok) {
+        const data = await incomingRes.json();
+        const transfers = data.result?.transfers || [];
+
+        for (const tx of transfers) {
+          let type: ActivityType = 'receive';
+          let title = 'Received';
+          let value = '';
+
+          if (tx.from === '0x0000000000000000000000000000000000000000') {
+            type = 'mint';
+            title = 'Minted';
+          }
+
+          if (tx.value) {
+            const symbol = tx.asset || 'ETH';
+            value = `+${parseFloat(tx.value).toFixed(4)} ${symbol}`;
+          }
+
+          if (tx.asset) {
+            title = `${title} ${tx.asset}`;
+          }
+
+          const timestamp = tx.metadata?.blockTimestamp 
+            ? new Date(tx.metadata.blockTimestamp).getTime()
+            : Date.now();
+
+          activities.push({
+            id: `${tx.hash}-${tx.uniqueId}-in`,
+            type,
+            title: title.length > 30 ? title.substring(0, 30) + '...' : title,
+            timestamp,
+            value,
+            chain: chain.key,
+            txHash: tx.hash,
+            explorerUrl: `${chain.explorer}${tx.hash}`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching activity for ${chain.key}:`, error);
     }
-  } catch (error) {
-    console.error(`Error fetching EVM activity:`, error);
-  }
+  });
+
+  await Promise.all(promises);
 
   return activities;
 }
