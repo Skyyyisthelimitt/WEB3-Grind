@@ -969,8 +969,23 @@ export default function PortfolioPage() {
                                       activity.type === "receive" ? "📥" : "📋"}
                                  </div>
                                  <div className="min-w-0">
-                                    <div className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate w-32 md:w-48" title={activity.title}>
-                                        {activity.title}
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate" title={activity.title}>
+                                            {activity.title}
+                                        </div>
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider leading-none shrink-0 ${
+                                            activity.chain === 'solana' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                                            activity.chain === 'ethereum' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
+                                            activity.chain === 'base' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                                            'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                                        }`}>
+                                            {activity.chain === 'ethereum' ? 'ETH' : 
+                                             activity.chain === 'solana' ? 'SOL' :
+                                             activity.chain === 'polygon' ? 'POL' :
+                                             activity.chain === 'arbitrum' ? 'ARB' :
+                                             activity.chain === 'optimism' ? 'OP' :
+                                             activity.chain.slice(0, 4)}
+                                        </span>
                                     </div>
                                     <div className="text-xs text-zinc-500">{activity.timeAgo}</div>
                                  </div>
