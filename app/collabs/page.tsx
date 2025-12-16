@@ -17,7 +17,7 @@ import {
   CheckmarkCircle01Icon,
   UserMultiple02Icon
 } from "hugeicons-react";
-import EditProfileModal from "../../components/EditProfileModal";
+import EditProfileModal from "../components/EditProfileModal";
 import pfp from "../images/khun.jpg";
 
 const DEFAULT_COMMUNITIES = [
