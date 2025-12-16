@@ -57,7 +57,7 @@ async function fetchSolanaActivity(address: string): Promise<Activity[]> {
   try {
     const response = await fetch(
       `https://api.helius.xyz/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=15`,
-      { next: { revalidate: 60 } } // Cache for 1 minute
+      { next: { revalidate: 15 } } // Cache for 15 seconds
     );
 
     if (!response.ok) {
@@ -81,11 +81,12 @@ async function fetchSolanaActivity(address: string): Promise<Activity[]> {
         const amount = transfer.tokenAmount || 0;
         const symbol = transfer.mint?.slice(0, 4) || 'tokens';
         
+        // Check for exact address match
         if (transfer.fromUserAccount === address) {
-          refinedType = type === 'send' ? 'send' : type;
+          refinedType = 'send';
           value = `-${amount.toFixed(2)} ${symbol}`;
         } else if (transfer.toUserAccount === address) {
-          refinedType = type === 'send' ? 'receive' : type;
+          refinedType = 'receive';
           value = `+${amount.toFixed(2)} ${symbol}`;
         }
       }
@@ -96,8 +97,10 @@ async function fetchSolanaActivity(address: string): Promise<Activity[]> {
         const solAmount = (transfer.amount / 1e9).toFixed(4);
         
         if (transfer.fromUserAccount === address) {
+          refinedType = 'send';
           value = `-${solAmount} SOL`;
         } else if (transfer.toUserAccount === address) {
+          refinedType = 'receive';
           value = `+${solAmount} SOL`;
         }
       }
