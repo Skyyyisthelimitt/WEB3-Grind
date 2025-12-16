@@ -867,7 +867,7 @@ export default function PortfolioPage() {
                )}
             </div>
 
-            {/* Asset Breakdown (Bottom) - Bigger Text */}
+            {/* Asset Breakdown (Bottom) */}
             <div className="pt-3 border-t border-zinc-800/50 flex gap-6 mt-auto">
                  <div className="flex-1 space-y-2">
                     <div className="flex justify-between items-end">
@@ -876,11 +876,11 @@ export default function PortfolioPage() {
                     </div>
                     {/* Progress Bar for Tokens */}
                     <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-500 w-full" />
+                      <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${displayTotalValue > 0 ? (displayTokenValue / displayTotalValue) * 100 : 0}%` }} />
                     </div>
                  </div>
 
-                 <div className="flex-1 space-y-2 opacity-60">
+                 <div className="flex-1 space-y-2">
                     <div className="flex justify-between items-end">
                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">NFTs</span>
                        <span className="text-sm font-bold text-zinc-100">{formatValue(displayNftValue)}</span>
