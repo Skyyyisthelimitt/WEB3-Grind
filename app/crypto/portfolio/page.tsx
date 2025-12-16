@@ -134,6 +134,72 @@ const DEMO_HOLDINGS: TokenHolding[] = [
   },
 ];
 
+type NFTHolding = {
+  id: string;
+  name: string;
+  collection: string;
+  image: string;
+  listingPrice?: number;
+  rarity?: string;
+  floorPrice: number;
+  topOffer?: number;
+  chain: string;
+  chainColor: string;
+  receivedDate: string;
+  isListed: boolean;
+};
+
+const DEMO_NFTS: NFTHolding[] = [
+  {
+    id: "nft-1",
+    name: "Nations Pre-Reveal",
+    collection: "Nations on HL",
+    image: "https://i.seadn.io/s/raw/files/4d119e5907c13da82fc9d618991a76c7.png?auto=format&dpr=1&w=384",
+    floorPrice: 0.68,
+    topOffer: 0.04,
+    chain: "arbitrum",
+    chainColor: "#28A0F0",
+    receivedDate: "8/20/25",
+    isListed: false
+  },
+  {
+    id: "nft-2",
+    name: "Undercats #330",
+    collection: "Undercats",
+    image: "https://images.tensor.trade/tensor/dda31a29-e58f-4ed3-9a3b-285223384236",
+    floorPrice: 14.78,
+    chain: "solana",
+    chainColor: "#9945FF",
+    receivedDate: "1/17/24",
+    isListed: false,
+    rarity: "#420"
+  },
+  {
+    id: "nft-3",
+    name: "Ladynaire #147",
+    collection: "Lazynaire: The Ladynaire",
+    image: "https://i.seadn.io/s/raw/files/7027581691238495444ca7042858102d.png?auto=format&dpr=1&w=384",
+    floorPrice: 2.50,
+    listingPrice: 3.50,
+    chain: "ethereum",
+    chainColor: "#627EEA",
+    receivedDate: "8/3/23",
+    isListed: true,
+    rarity: "#61"
+  },
+  {
+    id: "nft-4",
+    name: "T(RE:)AT",
+    collection: "T(RE:)AT",
+    image: "https://images.tensor.trade/tensor/26330419-450f-488b-a2c9-f9c3f1e56950",
+    floorPrice: 0.13,
+    chain: "solana",
+    chainColor: "#9945FF",
+    receivedDate: "10/31/24",
+    isListed: false
+  }
+];
+
 /* ----------------------- Wallet Button Component ----------------------- */
 function WalletButton({
   type,
@@ -371,6 +437,9 @@ export default function PortfolioPage() {
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [copiedEvm, setCopiedEvm] = useState(false);
   const [copiedSolana, setCopiedSolana] = useState(false);
+  
+  // View Mode: Tokens or NFTs
+  const [viewMode, setViewMode] = useState<"tokens" | "nfts">("tokens");
 
   // LocalStorage persistence
   useEffect(() => {
@@ -553,7 +622,6 @@ export default function PortfolioPage() {
       .sort((a, b) => b.value - a.value);
   }, [holdings, totalValue]);
 
-  // Filter and sort holdings
   const filteredHoldings = useMemo(() => {
     // Determine source data: Demo or Real
     let result = [...(isDemo ? DEMO_HOLDINGS : holdings)];
@@ -579,19 +647,42 @@ export default function PortfolioPage() {
     return result;
   }, [holdings, searchQuery, chainFilter, isDemo]);
 
+  // Filter NFTs
+  const filteredNFTs = useMemo(() => {
+     let result = [...DEMO_NFTS]; // Currently only Demo Data available for NFTs
+
+     // Search
+     if (searchQuery) {
+       const query = searchQuery.toLowerCase();
+       result = result.filter(n => 
+         n.name.toLowerCase().includes(query) || 
+         n.collection.toLowerCase().includes(query)
+       );
+     }
+
+     // Chain Filter
+     if (chainFilter !== "all") {
+       result = result.filter(n => n.chain === chainFilter);
+     }
+
+     return result;
+  }, [searchQuery, chainFilter]);
+
   // Dynamic chain filter list - shows only chains with holdings, or defaults when no wallet
   const availableChains = useMemo(() => {
     const isWalletConnected = isEvmConnected || isSolanaConnected;
     
-    if (!isWalletConnected || holdings.length === 0) {
+    if (!isWalletConnected || (viewMode === "tokens" && holdings.length === 0)) {
       // Default chains when no wallet connected
       return ["ethereum", "solana"];
     }
     
-    // Get unique chains from actual holdings
-    const chainsWithHoldings = [...new Set(holdings.map(h => h.chain))];
+    // Get unique chains from actual holdings (Tokens or NFTs)
+    const source = viewMode === "tokens" ? holdings : DEMO_NFTS; // Using Demo for NFTs for now
+    // map cast to any to handle both types having 'chain'
+    const chainsWithHoldings = [...new Set(source.map((h: any) => h.chain))];
     return chainsWithHoldings;
-  }, [holdings, isEvmConnected, isSolanaConnected]);
+  }, [holdings, isEvmConnected, isSolanaConnected, viewMode]);
 
   // Format helpers
   const formatValue = (value: number) => {
@@ -610,6 +701,7 @@ export default function PortfolioPage() {
   };
 
   const displayHoldings = filteredHoldings;
+  const displayNFTs = filteredNFTs;
   const displayTotalValue = isDemo ? DEMO_HOLDINGS.reduce((sum, h) => sum + h.value, 0) : totalValue;
 
   return (
@@ -925,8 +1017,33 @@ export default function PortfolioPage() {
           ))}
         </div>
 
-        {/* Currency Selector - right aligned */}
-        <div className="relative ml-auto">
+        {/* Currency Selector & View Switcher */}
+        <div className="relative ml-auto flex items-center gap-3">
+          {/* View Switcher */}
+          <div className="flex p-1 bg-zinc-800/60 rounded-xl border border-zinc-700/50">
+             <button
+               onClick={() => setViewMode("tokens")}
+               className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                 viewMode === "tokens" 
+                   ? "bg-zinc-700 text-white shadow-sm" 
+                   : "text-zinc-400 hover:text-zinc-300"
+               }`}
+             >
+               Tokens
+             </button>
+             <button
+               onClick={() => setViewMode("nfts")}
+               className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                 viewMode === "nfts" 
+                   ? "bg-zinc-700 text-white shadow-sm" 
+                   : "text-zinc-400 hover:text-zinc-300"
+               }`}
+             >
+               NFTs
+             </button>
+          </div>
+
+          <div className="relative">
           <button
             onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800/60 border border-zinc-700/50 text-sm font-medium text-zinc-300 hover:bg-zinc-700/60 transition-colors"
@@ -956,12 +1073,13 @@ export default function PortfolioPage() {
           )}
         </div>
       </div>
+      </div>
 
-      {/* Holdings Table */}
+      {/* Holdings Table - Conditional Render */}
       <div className="bg-zinc-900/40 rounded-2xl border border-zinc-800/60 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800/60">
-          <h2 className="text-white font-semibold">Token Holdings</h2>
-          {lastUpdated && (
+          <h2 className="text-white font-semibold">{viewMode === "tokens" ? "Token Holdings" : "NFT Holdings"}</h2>
+          {lastUpdated && viewMode === "tokens" && (
             <span className="text-zinc-500 text-xs">
               Last updated: {lastUpdated.toLocaleTimeString()}
             </span>
@@ -969,7 +1087,9 @@ export default function PortfolioPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          {viewMode === "tokens" ? (
+             /* Token Table */
+             <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-800/60">
                 <th className="text-left px-5 py-3 font-medium text-zinc-400 text-sm">Token</th>
@@ -1074,6 +1194,102 @@ export default function PortfolioPage() {
               )}
             </tbody>
           </table>
+          ) : (
+             /* NFT Table */
+             <table className="w-full">
+               <thead>
+                 <tr className="border-b border-zinc-800/60">
+                   <th className="text-left px-5 py-3 font-medium text-zinc-400 text-xs uppercase tracking-wider">Item</th>
+                   <th className="text-right px-5 py-3 font-medium text-zinc-400 text-xs uppercase tracking-wider">Listing Price</th>
+                   <th className="text-right px-5 py-3 font-medium text-zinc-400 text-xs uppercase tracking-wider">Rarity</th>
+                   <th className="text-right px-5 py-3 font-medium text-zinc-400 text-xs uppercase tracking-wider">Floor Price</th>
+                   <th className="text-right px-5 py-3 font-medium text-zinc-400 text-xs uppercase tracking-wider">Top Offer</th>
+                   <th className="text-right px-5 py-3 font-medium text-zinc-400 text-xs uppercase tracking-wider">Chain</th>
+                   <th className="text-right px-5 py-3 font-medium text-zinc-400 text-xs uppercase tracking-wider">Received</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 {displayNFTs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-5 py-12 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <span className="text-3xl">🖼️</span>
+                          <span className="text-zinc-400 text-sm">No NFTs found in this portfolio</span>
+                        </div>
+                      </td>
+                    </tr>
+                 ) : (
+                   displayNFTs.map((nft) => (
+                     <tr key={nft.id} className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors group">
+                        {/* 1. Item */}
+                        <td className="px-5 py-4">
+                           <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-lg bg-zinc-800 shrink-0 overflow-hidden relative">
+                                 <img src={nft.image} alt={nft.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                 <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-lg"></div>
+                              </div>
+                              <div>
+                                 <div className="text-white font-semibold text-sm">{nft.name}</div>
+                                 <div className="text-zinc-500 text-xs flex items-center gap-1.5 mt-0.5">
+                                    {nft.collection}
+                                    {nft.chain === "arbitrum" && <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_5px_rgba(96,165,250,0.5)]"></div>}
+                                 </div>
+                              </div>
+                           </div>
+                        </td>
+                        {/* 2. Listing Price */}
+                        <td className="px-5 py-4 text-right">
+                           {nft.isListed ? (
+                             <span className="text-white font-medium">{formatValue(nft.listingPrice || 0)}</span>
+                           ) : (
+                             <span className="text-zinc-600">-</span>
+                           )}
+                        </td>
+                        {/* 3. Rarity */}
+                        <td className="px-5 py-4 text-right">
+                           {nft.rarity ? (
+                              <span className="text-zinc-300 font-mono text-sm px-2 py-0.5 rounded bg-zinc-800/50 border border-zinc-700/50">
+                                 {nft.rarity}
+                              </span>
+                           ) : (
+                              <span className="text-zinc-600">-</span>
+                           )}
+                        </td>
+                        {/* 4. Floor Price */}
+                        <td className="px-5 py-4 text-right">
+                           <div className="font-semibold text-zinc-200">{formatValue(nft.floorPrice)}</div>
+                        </td>
+                        {/* 5. Top Offer */}
+                        <td className="px-5 py-4 text-right">
+                            {nft.topOffer ? (
+                              <div className="font-semibold text-emerald-400">{formatValue(nft.topOffer)}</div>
+                            ) : (
+                              <span className="text-zinc-600">-</span>
+                            )}
+                        </td>
+                        {/* 6. Chain Badge */}
+                        <td className="px-5 py-4 text-right">
+                            <span 
+                              className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide border"
+                              style={{ 
+                                borderColor: `${nft.chainColor}40`,
+                                backgroundColor: `${nft.chainColor}10`,
+                                color: nft.chainColor 
+                              }}
+                            >
+                              {nft.chain === "ethereum" ? "ETH" : nft.chain === "solana" ? "SOL" : nft.chain.substring(0,4)}
+                            </span>
+                        </td>
+                        {/* 7. Received */}
+                        <td className="px-5 py-4 text-right">
+                           <span className="text-zinc-400 text-sm font-medium">{nft.receivedDate}</span>
+                        </td>
+                     </tr>
+                   ))
+                 )}
+               </tbody>
+             </table>
+          )}
         </div>
       </div>
     </div>
