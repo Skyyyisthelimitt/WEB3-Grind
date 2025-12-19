@@ -1,89 +1,98 @@
-## Web3 Wizard
+# Web3 Wizard
 
-Manage your WEB3 journey in one place – track whitelists, collabs, and market data with a clean dashboard.
+### The Ultimate Operating System for Web3 Natives.
 
-### Features
+**Web3 Wizard** unifies your crypto portfolio, whitelist grinding, and collab management into a sleek, high-performance interface. Designed for degens, traders, and collectors who need clarity in the chaos.
 
-- **Portfolio Tracking**:
-  - **Multi-Chain Support**: View balances and NFTs across Ethereum, Solana, Base, Arbitrum, Optimism, and Polygon.
-  - **Real-Time Valuation**: Aggregates token values in your preferred currency.
-  - **Activity Feed**: Unified transaction history for both EVM and Solana wallets.
-- **Whitelist tracker**: Syncs from a Google Sheet (`WHITELIST` tab) and shows:
-  - Project, chain, type (WL/OG/etc.), wallet, mint date/time, timezone, and price.
-  - Quick search, inline add/edit/delete, and a mini calendar of upcoming mints.
-- **Collab management**: Reads/writes to Google Sheet tabs (`COLLABS_ACTIVE` / `COLLABS_DONE`) with:
-  - Project, X/Twitter, community, spots, contacts, deadlines, GA links, winners links, and status.
-  - “Ongoing / Done” views and edit/delete controls.
-- **Crypto overview**:
-  - **Live Markets Table**: Track top 100 coins with real-time prices, 24h changes, market caps, and volume.
-  - **Advanced UI**: Sleek dark mode design with gradient sparkline charts for 7-day price trends.
-  - **Exchange Integration**: Direct trade links to Binance, Bybit, Coinbase, and CoinGecko with custom listed icons.
-  - **Smart Pagination**: Responsive, Shadcn-style pagination for easy navigation.
-  - **Currency Selector**: Multi-currency support (USD, EUR, GBP, PHP, JPY, KRW, AUD) with instant conversion.
-  - **Favorites**: Persisted favorite coins (localStorage) with detailed trend cards and quick actions.
-- **Dashboard**:
-  - **Profile Management**: Custom profile picture uploads (stored via Supabase) and editable details.
-  - **Enhanced Header**: Unified design with centered search bar and streamlined navigation.
-- **Daily inspiration**:
-  - Daily Bible verse and motivational quote section.
-- **Auth & layout**:
-  - **Supabase Auth**: Secure email/password authentication.
-  - Login page with hero carousel and per‑slide copy.
-  - Protected dashboard behind `/login` (Next.js app router + middleware).
+---
 
-### Tech Stack
+## 🔥 Key Features
 
-- **Frontend**: Next.js App Router, React, TypeScript, Tailwind CSS, Recharts, `hugeicons-react`, `rainbowkit`, `@solana/wallet-adapter`.
-- **Backend / APIs**:
-  - **Supabase**: Authentication, Database (Profiles), and Storage (Avatars).
-  - **Alchemy & Helius**: Blockchain data for EVM and Solana balances/activity.
-  - Google Sheets API (via `googleapis`) for legacy whitelists and collab data.
-  - CoinMarketCap API for live prices.
-  - CryptoCompare API for historical price data.
-  - Public APIs for quotes/verses and FX rates.
+### 📊 **Unified Portfolio Tracking**
 
-### Local Development
+- **Multi-Chain Dominance:** Seamlessly track assets across **Ethereum, Solana, Base, Optimism, Arbitrum, and Polygon**.
+- **Real-Time Net Worth:** Live aggregation of all your token holdings in your preferred currency (USD, EUR, JPY, and more).
+- **Activity Feed:** A consolidated view of your transaction history across both EVM and Solana chains.
 
-1. Install dependencies:
+### 📝 **Smart Whitelist & Collab Manager**
 
-```bash
-npm install
-```
+- **Never Miss a Mint:** Syncs directly with Google Sheets (`WHITELIST` tab) to track WL/OG spots, mint dates, prices, and timezones.
+- **Collab Mastery:** Manage giveaways and collaborations (`COLLABS_ACTIVE` / `COLLABS_DONE`) with status tracking, contacts, and winner links.
+- **Calendar View:** Visual timeline of your upcoming mints.
 
-2. Create `.env.local` with:
+### 📈 **Advanced Market Intelligence**
 
-```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
+- **Live Crypto Dashboard:** Real-time data for top 100 coins with sparkline trends, volume, and market cap.
+- **Charts & Trends:** Beautiful, interactive charts providing deep insights.
+- **Instant Exchange Access:** Direct links to trade on Binance, Bybit, Coinbase, and more.
+- **Watchlist:** Pin your favorite gems for quick access (persisted locally).
 
-# Blockchain Providers
-NEXT_PUBLIC_ALCHEMY_API_KEY=...
-NEXT_PUBLIC_ALCHEMY_SOL_KEY=...
-HELIUS_API_KEY=...
-ALCHEMY_API_KEY=...
+### 🛡️ **Secure & Seamless Experience**
 
-# Google Sheets (Whitelists/Collabs)
-GOOGLE_CLIENT_EMAIL=...
-GOOGLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
-GOOGLE_SHEET_ID=...
+- **Enterprise-Grade Auth:** Secure Sign-Up and Login powered by **Supabase**.
+- **Web3 Connect:** Integrated with **RainbowKit** and **Solana Wallet Adapter** for effortless wallet connections.
+- **Premium UI/UX:** A fully responsive, dark-mode-first aesthetic with smooth GSAP animations and glassmorphism details.
 
-# Market Data
-COINMARKETCAP_API_KEY=...
-CRYPTOCOMPARE_API_KEY=...
-```
+### ✨ **Daily Alpha**
 
-3. Run the dev server:
+- **Motivation:** Daily doses of inspiration and verses to keep you grounded while you grind.
 
-```bash
-npm run dev
-```
+---
 
-4. Open `http://localhost:3000` and log in via `/login`.
+## 🛠 Tech Stack
 
-### Deploying
+Built with the cutting-edge Modern Web3 Stack:
 
-- Recommended: deploy on **Vercel**.
-- Set the same environment variables in the Vercel project (Production + Preview).
-- Push to the tracked branch (e.g. `main`) and Vercel will build & deploy automatically.
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS + Shadcn Concepts
+- **Blockchain:** Wagmi, Viem, Solana Web3.js, RainbowKit
+- **Backend:** Supabase (Auth, DB), Google Sheets API
+- **Data:** Alchemy, Helius, CoinMarketCap, CryptoCompare
+
+---
+
+## 💻 Running Locally
+
+<details>
+<summary><b>Click to expand setup instructions</b></summary>
+
+1. **Clone & Install**
+
+   ```bash
+   git clone https://github.com/StartDusty/WEB3-Grind.git
+   cd WEB3-Grind
+   npm install
+   ```
+
+2. **Environment Setup**
+   Create a `.env.local` file with the following credentials:
+
+   ```bash
+   # Supabase
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+
+   # Blockchain Providers
+   NEXT_PUBLIC_ALCHEMY_API_KEY=...
+   NEXT_PUBLIC_ALCHEMY_SOL_KEY=...
+   HELIUS_API_KEY=...
+   ALCHEMY_API_KEY=...
+
+   # Google Sheets (Whitelists/Collabs)
+   GOOGLE_CLIENT_EMAIL=...
+   GOOGLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
+   GOOGLE_SHEET_ID=...
+
+   # Market Data
+   COINMARKETCAP_API_KEY=...
+   CRYPTOCOMPARE_API_KEY=...
+   ```
+
+3. **Start the Engine**
+   ```bash
+   npm run dev
+   ```
+   Visit `http://localhost:3000` to start grinding.
+   </details>
