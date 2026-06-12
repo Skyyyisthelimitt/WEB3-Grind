@@ -63,7 +63,7 @@ export default function CollabsPage() {
   const [rows, setRows] = useState<Collab[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimers = useRef<Record<number, NodeJS.Timeout>>({});
   
   // Profile State
   const [profile, setProfile] = useState<any>(null);
@@ -163,12 +163,12 @@ export default function CollabsPage() {
     }
   };
 
-  // Update Row
+  // Update Row — per-row debounce to prevent cancelling saves from other rows
   const updateRow = async (id: number, updates: Partial<Collab>) => {
     setRows(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
 
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(async () => {
+    if (debounceTimers.current[id]) clearTimeout(debounceTimers.current[id]);
+    debounceTimers.current[id] = setTimeout(async () => {
       try {
         await fetch(`/api/collabs?id=${id}`, {
           method: "PUT",
@@ -177,6 +177,7 @@ export default function CollabsPage() {
       } catch (e) {
         console.error("Failed to save", e);
       }
+      delete debounceTimers.current[id];
     }, 500);
   };
 
@@ -422,7 +423,7 @@ export default function CollabsPage() {
 }
 
 function Td({ children, className="" }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-2 py-3 text-center border-r border-zinc-800 last:border-r-0 border-t border-zinc-900 ${className} overflow-hidden`}>{children}</td>;
+  return <td className={`px-2 py-3 text-center border-r border-zinc-800 last:border-r-0 border-t border-zinc-900 ${className}`}>{children}</td>;
 }
 
 function DarkDropdown({ value, options, onChange, renderValue, renderOption, onAdd, onDelete }: any) {
@@ -432,13 +433,18 @@ function DarkDropdown({ value, options, onChange, renderValue, renderOption, onA
   const [isAdding, setIsAdding] = useState(false);
   const [newOption, setNewOption] = useState("");
   
+  const [openUp, setOpenUp] = useState(false);
+
   useEffect(() => {
     const updatePosition = () => {
       if (open && buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const shouldOpenUp = spaceBelow < 260 && rect.top > 260;
+        setOpenUp(shouldOpenUp);
         setCoords({
-          top: rect.bottom + 2,
-          left: rect.left + (rect.width / 2), // Center point
+          top: shouldOpenUp ? rect.top - 2 : rect.bottom + 2,
+          left: rect.left + (rect.width / 2),
           width: rect.width
         });
       }
@@ -482,11 +488,11 @@ function DarkDropdown({ value, options, onChange, renderValue, renderOption, onA
       {open && (
         <div className="fixed inset-0 z-[9999]" onClick={() => setOpen(false)}>
           <div 
-            className="absolute bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl py-1 max-h-[300px] flex flex-col overflow-hidden"
+            className="absolute bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl py-1 max-h-[260px] flex flex-col overflow-hidden"
             style={{ 
               top: coords.top, 
               left: coords.left, 
-              transform: 'translateX(-50%)', // Centered
+              transform: openUp ? 'translateX(-50%) translateY(-100%)' : 'translateX(-50%)',
               minWidth: onAdd ? "160px" : Math.max(coords.width, 100) + "px",
               maxWidth: "240px",
               zIndex: 10000 
