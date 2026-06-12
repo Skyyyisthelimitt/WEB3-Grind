@@ -12,10 +12,13 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   ArrowDown01Icon,
+  ArrowUp01Icon,
   Link01Icon,
   Add01Icon,
   CheckmarkCircle01Icon,
-  UserMultiple02Icon
+  UserMultiple02Icon,
+  Copy01Icon,
+  DragDropIcon,
 } from "hugeicons-react";
 import EditProfileModal from "../components/EditProfileModal";
 
@@ -64,6 +67,12 @@ export default function CollabsPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const debounceTimers = useRef<Record<number, NodeJS.Timeout>>({});
+
+  // Bulk select
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  // Sort
+  const [sortConfig, setSortConfig] = useState<{ col: keyof Collab; dir: 'asc' | 'desc' } | null>(null);
   
   // Profile State
   const [profile, setProfile] = useState<any>(null);
@@ -163,41 +172,152 @@ export default function CollabsPage() {
     }
   };
 
-  // Update Row — per-row debounce to prevent cancelling saves from other rows
+  // Update Row — handles single edits, OR bulk edits if the row is selected
   const updateRow = async (id: number, updates: Partial<Collab>) => {
-    setRows(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+    const isBulk = selectedIds.has(id) && selectedIds.size > 1;
+    const targetIds = isBulk ? Array.from(selectedIds) : [id];
 
-    if (debounceTimers.current[id]) clearTimeout(debounceTimers.current[id]);
-    debounceTimers.current[id] = setTimeout(async () => {
-      try {
-        await fetch(`/api/collabs?id=${id}`, {
-          method: "PUT",
-          body: JSON.stringify(updates),
-        });
-      } catch (e) {
-        console.error("Failed to save", e);
-      }
-      delete debounceTimers.current[id];
-    }, 500);
+    setRows(prev => prev.map(r => targetIds.includes(r.id) ? { ...r, ...updates } : r));
+
+    targetIds.forEach(targetId => {
+      if (debounceTimers.current[targetId]) clearTimeout(debounceTimers.current[targetId]);
+      debounceTimers.current[targetId] = setTimeout(async () => {
+        try {
+          await fetch(`/api/collabs?id=${targetId}`, { method: "PUT", body: JSON.stringify(updates) });
+        } catch (e) { console.error("Failed to save", e); }
+        delete debounceTimers.current[targetId];
+      }, 500);
+    });
   };
 
   // Delete Row
   const deleteRow = async (id: number) => {
     if(!confirm("Delete this collab?")) return;
     setRows(prev => prev.filter(r => r.id !== id));
+    setSelectedIds(prev => { const s = new Set(prev); s.delete(id); return s; });
     await fetch(`/api/collabs?id=${id}`, { method: "DELETE" });
+  };
+
+  // Bulk Delete
+  const handleDeleteSelected = async () => {
+    if (!selectedIds.size) return;
+    if (!confirm(`Delete ${selectedIds.size} selected collab(s)?`)) return;
+    const ids = Array.from(selectedIds);
+    setRows(prev => prev.filter(r => !selectedIds.has(r.id)));
+    setSelectedIds(new Set());
+    await Promise.all(ids.map(id => fetch(`/api/collabs?id=${id}`, { method: "DELETE" })));
+  };
+
+  // Duplicate Row
+  const duplicateRow = async (id: number) => {
+    const src = rows.find(r => r.id === id);
+    if (!src) return;
+    const newRow = {
+      project: src.project + " (copy)",
+      twitter: src.twitter,
+      community: src.community,
+      spots: src.spots,
+      contact: src.contact,
+      teamSpots: src.teamSpots,
+      status: src.status || "Not Posted",
+      giveawayLink: src.giveawayLink,
+      winners: src.winners,
+    };
+    const tempId = Date.now();
+    setRows(prev => [...prev, { id: tempId, ...newRow } as Collab]);
+    try {
+      const res = await fetch("/api/collabs", { method: "POST", body: JSON.stringify(newRow) });
+      if (res.ok) {
+        const refreshRes = await fetch(`/api/collabs?tab=${tab}`, { cache: "no-store" });
+        const json = await refreshRes.json();
+        setRows(json.collabs || []);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  // Sort
+  const handleSort = (col: keyof Collab) => {
+    setSortConfig(prev =>
+      prev?.col === col
+        ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { col, dir: 'asc' }
+    );
+  };
+
+  // Excel-like multi-line paste
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>, startRowIdx: number, colName: keyof Collab) => {
+    const pasteData = e.clipboardData.getData('text');
+    if (pasteData.includes('\n')) {
+      e.preventDefault();
+      const lines = pasteData.split(/\r?\n/).filter(line => line.trim() !== '');
+      
+      const newRows = [...rows];
+      const updatesToMake: { id: number; updates: Partial<Collab> }[] = [];
+      
+      for (let i = 0; i < lines.length; i++) {
+        const targetRowIdx = startRowIdx + i;
+        if (targetRowIdx < filtered.length) {
+          const targetRow = filtered[targetRowIdx];
+          updatesToMake.push({ id: targetRow.id, updates: { [colName]: lines[i].trim() } });
+          const realIdx = newRows.findIndex(r => r.id === targetRow.id);
+          if (realIdx >= 0) newRows[realIdx] = { ...newRows[realIdx], [colName]: lines[i].trim() };
+        }
+      }
+      
+      setRows(newRows);
+      
+      updatesToMake.forEach(({ id, updates }) => {
+        if (debounceTimers.current[id]) clearTimeout(debounceTimers.current[id]);
+        debounceTimers.current[id] = setTimeout(async () => {
+          try {
+            await fetch(`/api/collabs?id=${id}`, { method: "PUT", body: JSON.stringify(updates) });
+          } catch (e) {}
+          delete debounceTimers.current[id];
+        }, 500);
+      });
+    }
   };
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return rows;
-    return rows.filter(r => 
-      [r.project, r.twitter, r.community, r.status, r.contact].map(v => (v||"").toString().toLowerCase()).join(" ").includes(s)
-    );
-  }, [rows, q]);
+    let list = !s
+      ? rows
+      : rows.filter(r =>
+          [r.project, r.twitter, r.community, r.status, r.contact]
+            .map(v => (v || "").toString().toLowerCase())
+            .join(" ")
+            .includes(s)
+        );
+    if (sortConfig) {
+      list = [...list].sort((a, b) => {
+        const av = (a[sortConfig.col] || "").toString().toLowerCase();
+        const bv = (b[sortConfig.col] || "").toString().toLowerCase();
+        return sortConfig.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+    return list;
+  }, [rows, q, sortConfig]);
+
+  // Select all (only filtered rows)
+  const allFilteredSelected = filtered.length > 0 && filtered.every(r => selectedIds.has(r.id));
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds(prev => { const s = new Set(prev); filtered.forEach(r => s.delete(r.id)); return s; });
+    } else {
+      setSelectedIds(prev => { const s = new Set(prev); filtered.forEach(r => s.add(r.id)); return s; });
+    }
+  };
 
   const handleDateChange = (id: number, isoDate: string) => {
     updateRow(id, { dueAt: isoDate });
+  };
+
+  // Sort indicator helper
+  const SortIcon = ({ col }: { col: keyof Collab }) => {
+    if (sortConfig?.col !== col) return <ArrowDown01Icon size={10} className="inline ml-1 opacity-20" />;
+    return sortConfig.dir === 'asc'
+      ? <ArrowUp01Icon size={10} className="inline ml-1 text-blue-400" />
+      : <ArrowDown01Icon size={10} className="inline ml-1 text-blue-400" />;
   };
 
   return (
@@ -240,36 +360,74 @@ export default function CollabsPage() {
                 : "Track and manage your active collaborations and their status."}
             </p>
           </div>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all text-sm font-medium"
+            >
+              <Delete01Icon size={14} />
+              Delete {selectedIds.size} selected
+            </button>
+          )}
         </div>
 
         <div className="rounded-xl border border-zinc-800 overflow-x-auto bg-black/40">
-           <table className="w-full text-sm" style={{ tableLayout: "fixed", minWidth: "1200px" }}>
+           <table className="w-full text-sm" style={{ tableLayout: "fixed", minWidth: "1280px" }}>
              <thead className="bg-zinc-900/50 text-white">
                <tr>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[150px]">Project</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[220px]">X</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[120px]">Community</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[80px]">Spots</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[130px]">Contact</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[100px]">Team Spots</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[110px]">Status</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[130px]">Due Date</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[150px]">Giveaway</th>
-                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[120px]">Winners</th>
-                 <th className="w-[90px] bg-zinc-900/50 border-zinc-800"></th>
+                 <th className="w-[40px] bg-zinc-900/20 border-r border-zinc-800 px-2 text-center">
+                   <input
+                     type="checkbox"
+                     checked={allFilteredSelected}
+                     onChange={toggleSelectAll}
+                     className="accent-blue-500 w-4 h-4 cursor-pointer"
+                   />
+                 </th>
+                 <th onClick={() => handleSort('project')} className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[140px] cursor-pointer hover:text-blue-300 select-none">Project<SortIcon col="project" /></th>
+                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[210px]">X</th>
+                 <th onClick={() => handleSort('community')} className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[120px] cursor-pointer hover:text-blue-300 select-none">Community<SortIcon col="community" /></th>
+                 <th onClick={() => handleSort('spots')} className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[70px] cursor-pointer hover:text-blue-300 select-none">Spots<SortIcon col="spots" /></th>
+                 <th onClick={() => handleSort('contact')} className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[120px] cursor-pointer hover:text-blue-300 select-none">Contact<SortIcon col="contact" /></th>
+                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[90px]">Team Spots</th>
+                 <th onClick={() => handleSort('status')} className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[110px] cursor-pointer hover:text-blue-300 select-none">Status<SortIcon col="status" /></th>
+                 <th onClick={() => handleSort('dueAt')} className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[120px] cursor-pointer hover:text-blue-300 select-none">Due Date<SortIcon col="dueAt" /></th>
+                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[140px]">Giveaway</th>
+                 <th className="px-2 py-3 text-center border-r border-zinc-800 bg-zinc-900/20 font-medium text-xs uppercase tracking-wider w-[110px]">Winners</th>
+                 <th className="w-[110px] bg-zinc-900/50 border-zinc-800"></th>
                </tr>
              </thead>
              <tbody>
                {loading ? (
-                 <tr><td colSpan={11} className="p-8 text-center text-zinc-500">Loading...</td></tr>
+                 <tr><td colSpan={13} className="p-8 text-center text-zinc-500">Loading...</td></tr>
                ) : (
                  <>
-                   {filtered.map((r) => (
-                     <tr key={r.id} className="group border-t border-zinc-900 hover:bg-zinc-900/30 transition-colors relative">
+                   {filtered.map((r, rowIdx) => (
+                     <tr
+                       key={r.id}
+                       className={`group border-t border-zinc-900 transition-colors relative ${
+                         selectedIds.has(r.id) ? 'bg-blue-500/5' : 'hover:bg-zinc-900/30'
+                       }`}
+                     >
+                       {/* Checkbox with drag handle */}
+                       <td className="border-r border-zinc-800 border-t border-zinc-900 w-[40px] text-center px-2 flex items-center justify-center gap-1 h-full py-3 cursor-grab active:cursor-grabbing">
+                         <input
+                           type="checkbox"
+                           checked={selectedIds.has(r.id)}
+                           onChange={() => setSelectedIds(prev => {
+                             const s = new Set(prev);
+                             s.has(r.id) ? s.delete(r.id) : s.add(r.id);
+                             return s;
+                           })}
+                           className="accent-blue-500 w-4 h-4 cursor-pointer"
+                         />
+                       </td>
                         <Td>
                            <input 
                              value={r.project || ""}
                              onChange={(e) => updateRow(r.id, { project: e.target.value })}
+                             onPaste={(e) => handlePaste(e, rowIdx, 'project')}
+                             data-row-idx={rowIdx}
+                             data-col="project"
                              className="w-full bg-transparent border-none focus:outline-none text-[15px] font-medium text-white text-center placeholder-zinc-700" 
                              placeholder="Project Name"
                            />
@@ -279,6 +437,9 @@ export default function CollabsPage() {
                             <input 
                               value={r.twitter || ""}
                               onChange={(e) => updateRow(r.id, { twitter: e.target.value })}
+                              onPaste={(e) => handlePaste(e, rowIdx, 'twitter')}
+                              data-row-idx={rowIdx}
+                              data-col="twitter"
                               className="w-full bg-transparent border-none focus:outline-none text-zinc-300 text-center placeholder-zinc-700"
                               placeholder="x.com/..."
                             />
@@ -287,7 +448,7 @@ export default function CollabsPage() {
                                 href={r.twitter.startsWith('http') ? r.twitter : `https://x.com/${r.twitter.replace('x.com/','')}`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="p-1 hover:text-blue-400 text-white transition-all"
+                                className="p-1 hover:text-blue-400 text-white transition-all flex-shrink-0"
                               >
                                 <Link01Icon size={14} />
                               </a>
@@ -307,6 +468,9 @@ export default function CollabsPage() {
                           <input 
                             value={r.spots || ""}
                             onChange={(e) => updateRow(r.id, { spots: e.target.value })}
+                            onPaste={(e) => handlePaste(e, rowIdx, 'spots')}
+                            data-row-idx={rowIdx}
+                            data-col="spots"
                             className="w-full bg-transparent border-none focus:outline-none text-zinc-300 text-center placeholder-zinc-700"
                             placeholder="0"
                           />
@@ -315,6 +479,9 @@ export default function CollabsPage() {
                           <input 
                             value={r.contact || ""}
                             onChange={(e) => updateRow(r.id, { contact: e.target.value })}
+                            onPaste={(e) => handlePaste(e, rowIdx, 'contact')}
+                            data-row-idx={rowIdx}
+                            data-col="contact"
                             className="w-full bg-transparent border-none focus:outline-none text-zinc-300 text-center placeholder-zinc-700"
                             placeholder="@user"
                           />
@@ -323,6 +490,9 @@ export default function CollabsPage() {
                           <input 
                             value={r.teamSpots || ""}
                             onChange={(e) => updateRow(r.id, { teamSpots: e.target.value })}
+                            onPaste={(e) => handlePaste(e, rowIdx, 'teamSpots')}
+                            data-row-idx={rowIdx}
+                            data-col="teamSpots"
                             className="w-full bg-transparent border-none focus:outline-none text-zinc-300 text-center placeholder-zinc-700"
                             placeholder="0"
                           />
@@ -350,6 +520,9 @@ export default function CollabsPage() {
                             <input 
                               value={r.giveawayLink || ""}
                               onChange={(e) => updateRow(r.id, { giveawayLink: e.target.value })}
+                              onPaste={(e) => handlePaste(e, rowIdx, 'giveawayLink')}
+                              data-row-idx={rowIdx}
+                              data-col="giveawayLink"
                               className="w-full bg-transparent border-none focus:outline-none text-zinc-400 text-center placeholder-zinc-700"
                               placeholder="Link"
                             />
@@ -358,7 +531,7 @@ export default function CollabsPage() {
                                 href={r.giveawayLink.startsWith('http') ? r.giveawayLink : `https://${r.giveawayLink}`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="p-1 hover:text-blue-400 text-white transition-all"
+                                className="p-1 hover:text-blue-400 text-white transition-all flex-shrink-0"
                               >
                                 <Link01Icon size={14} />
                               </a>
@@ -370,6 +543,9 @@ export default function CollabsPage() {
                             <input 
                               value={r.winners || ""}
                               onChange={(e) => updateRow(r.id, { winners: e.target.value })}
+                              onPaste={(e) => handlePaste(e, rowIdx, 'winners')}
+                              data-row-idx={rowIdx}
+                              data-col="winners"
                               className="w-full bg-transparent border-none focus:outline-none text-zinc-400 text-center placeholder-zinc-700"
                               placeholder="Winners"
                             />
@@ -378,7 +554,7 @@ export default function CollabsPage() {
                                 href={r.winners.startsWith('http') ? r.winners : `https://${r.winners}`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="p-1 hover:text-blue-400 text-white transition-all"
+                                className="p-1 hover:text-blue-400 text-white transition-all flex-shrink-0"
                               >
                                 <Link01Icon size={14} />
                               </a>
@@ -386,15 +562,16 @@ export default function CollabsPage() {
                           </div>
                         </Td>
                         <Td className="text-center">
-                          <div className="flex items-center justify-center gap-3">
-                              <button onClick={() => deleteRow(r.id)} className="text-zinc-400 hover:text-red-400 transition-colors"><Delete01Icon size={18} /></button>
+                          <div className="flex items-center justify-center gap-2">
+                              <button onClick={() => duplicateRow(r.id)} className="text-zinc-500 hover:text-blue-400 transition-colors" title="Duplicate row"><Copy01Icon size={15} /></button>
+                              <button onClick={() => deleteRow(r.id)} className="text-zinc-400 hover:text-red-400 transition-colors" title="Delete"><Delete01Icon size={16} /></button>
                               {tab !== "done" && (
                                 <button 
                                   onClick={() => updateRow(r.id, { status: "Submitted" })} 
                                   className="text-zinc-500 hover:text-green-400 transition-colors"
                                   title="Mark as Done"
                                 >
-                                  <CheckmarkCircle01Icon size={18} />
+                                  <CheckmarkCircle01Icon size={16} />
                                 </button>
                               )}
                           </div>
@@ -402,7 +579,7 @@ export default function CollabsPage() {
                      </tr>
                    ))}
                    <tr className="border-t border-zinc-900/50 hover:bg-zinc-900/20 cursor-pointer transition-colors" onClick={createRow}>
-                      <td colSpan={11} className="py-3 text-center text-zinc-500 hover:text-zinc-300 text-xs font-medium uppercase tracking-wider">
+                      <td colSpan={12} className="py-3 text-center text-zinc-500 hover:text-zinc-300 text-xs font-medium uppercase tracking-wider">
                          + Add New Collab
                       </td>
                    </tr>
